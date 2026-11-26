@@ -7,7 +7,7 @@ namespace Dino.World
     /// Ready-made food source: berry bush, leafy tree, bug mound, fish spot. Put it on the plant prefab.
     /// Shrinks the optional 'foodVisual' as it is eaten and regrows over time.
     /// </summary>
-    public class FoodSource : MonoBehaviour, IFoodSource
+    public class FoodSource : MonoBehaviour, IFoodSource, INetSyncedFood
     {
         public FoodType foodType = FoodType.Berries;
         [Tooltip("Food units when full.")]
@@ -63,6 +63,12 @@ namespace Dino.World
             _remaining -= taken;
             UpdateVisual();
             return taken;
+        }
+
+        public void NetSetRemaining(float remaining)
+        {
+            _remaining = Mathf.Clamp(remaining, 0f, capacity);
+            UpdateVisual();
         }
 
         void Update()

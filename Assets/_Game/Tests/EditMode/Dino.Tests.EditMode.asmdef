@@ -3,6 +3,7 @@
     "rootNamespace": "Dino.Tests",
     "references": [
         "Dino.Runtime",
+        "Dino.Net",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],

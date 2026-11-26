@@ -22,6 +22,16 @@ namespace Dino.World
         float Bite(float units, GameObject eater);
     }
 
+    /// <summary>
+    /// Optional: food whose amount the multiplayer host can overwrite on other phones.
+    /// FoodSource and Carcass implement it; custom food sources should too if they need syncing.
+    /// </summary>
+    public interface INetSyncedFood
+    {
+        /// <summary>Sets the food left to the host's value (no events, no eater).</summary>
+        void NetSetRemaining(float remaining);
+    }
+
     /// <summary>Anything a dino can drink from: lakes, rivers, puddles.</summary>
     public interface IWaterSource
     {
