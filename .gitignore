@@ -48,3 +48,15 @@ google-services.json
 *service-account*.json
 .env
 .DS_Store
+
+# Island: rebuilt by Dino > World > Build Island, and art downloaded by Dino > World > Make Island Realistic.
+# Both are large and regenerate with one click, so they stay out of git.
+/Assets/_Game/World/Island/Generated/
+/Assets/_Game/World/Island/Generated.meta
+/Assets/_Game/World/Island/Island.unity
+/Assets/_Game/World/Island/Island.unity.meta
+/Assets/_Game/World/Art/
+/Assets/_Game/World/Art.meta
+
+# Output of Tools/IslandPreview/island.py
+/Tools/IslandPreview/island_preview.png

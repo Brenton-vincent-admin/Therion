@@ -37,6 +37,6 @@ namespace Dino.World
         void OnDrawGizmos() { Gizmos.color = new Color(1f, 0.8f, 0.2f); Gizmos.DrawWireSphere(transform.position, radius); }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        static void Reset() => _all.Clear();
+        static void ResetStatics() => _all.Clear();
     }
 }

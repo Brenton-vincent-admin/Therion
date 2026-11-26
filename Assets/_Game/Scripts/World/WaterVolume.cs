@@ -59,6 +59,6 @@ namespace Dino.World
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        static void Reset() => _all.Clear();
+        static void ResetStatics() => _all.Clear();
     }
 }
