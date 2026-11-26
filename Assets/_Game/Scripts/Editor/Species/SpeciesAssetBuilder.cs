@@ -6,7 +6,7 @@ using UnityEngine;
 namespace Dino.Species.Editor
 {
     /// <summary>
-    /// Builds the 13 launch SpeciesDefinition assets and the SpeciesCatalog from LaunchRoster.
+    /// Builds the launch SpeciesDefinition assets and the SpeciesCatalog from LaunchRoster.
     /// Safe to re-run after tuning: numbers are rewritten, but art references (model prefab, icon,
     /// model scale) are kept.
     /// </summary>

@@ -60,3 +60,9 @@ rigged in Blender.
 - URP mobile: one real-time shadow, baked lighting, GPU skinning, Animator culling "Cull Update Transforms".
 - Animations needed per species: idle, walk, run, eat, drink, attack, special, hurt, rest, faint. Packs usually have
   idle/walk/run/attack/eat/death; drink/rest/special can be retimed from eat/idle at first.
+
+## Carnotaurus (added 2026-11-26)
+Brenton wants a Carnotaurus and is having an original, realistic model built in Blender on his PC (biped-hunter base
+shared with the T. rex). Id `carnotaurus`, files under `Assets/_Game/Art/Dinos/carnotaurus/`, real size 8 m long, 3 m
+head height. The model must be our own design: reference photos of film or game dinosaurs are for anatomy and mood
+only, never traced or copied (no film-specific horn shapes, color schemes or scar patterns).

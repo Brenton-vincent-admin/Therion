@@ -4,7 +4,7 @@ using System.Linq;
 namespace Dino.Species
 {
     /// <summary>
-    /// The 13 launch species, as set by the Roster & Art Direction doc (stats, roles, stealth)
+    /// The 14 launch species (the original 13 plus Carnotaurus, added at Brenton's request 2026-11-26), as set by the Roster & Art Direction doc (stats, roles, stealth)
     /// and the Game Design doc (ability levels, XP unlock levels). Single source of truth for the
     /// SpeciesDefinition assets; unit tests check it against the docs.
     /// </summary>
@@ -120,7 +120,14 @@ namespace Dino.Species
               7f, 2.5f, 8, SkinLoadout.Of(SkinColor.Moss, SkinColor.Sand, SkinPattern.Leopard, SkinColor.Leaf, SkinColor.Sunflower),
               "New model needed. Biped on the T. rex rig with head crests and a frill"),
 
-            E(12, "trex", "T. rex", "Tyrannosaurus rex", Diet.Carnivore, MoveType.Land, SizeClass.Huge,
+            E(12, "carnotaurus", "Carno", "Carnotaurus", Diet.Carnivore, MoveType.Land, SizeClass.Large,
+              Temperament.Predator, "Horned sprinter that runs prey down in a straight line",
+              new StarStats(3, 4, 4, 3, 4, 3), false, SignatureAbility.BullRush,
+              "Bull rush: a long, fast charge you can't steer", "Longer rush", "Head-ram staggers what it hits",
+              8f, 3f, 10, SkinLoadout.Of(SkinColor.Clay, SkinColor.Sand, SkinPattern.Speckles, SkinColor.Berry, SkinColor.Charcoal),
+              "Original model in progress (Blender thread, biped-hunter base)", 1.2f),
+
+            E(13, "trex", "T. rex", "Tyrannosaurus rex", Diet.Carnivore, MoveType.Land, SizeClass.Huge,
               Temperament.Predator, "Apex hunter, slow to grow and the end goal",
               new StarStats(5, 5, 2, 2, 5, 3), false, SignatureAbility.Roar,
               "Roar makes small dinos flee", "Wider roar", "Allies get a speed boost",

@@ -1,4 +1,4 @@
-# Species (13 launch dinosaurs)
+# Species (14 launch dinosaurs)
 
 Owned by the species thread. Data format (`SpeciesDefinition`, `SpeciesCatalog`) is owned by core; this folder
 adds content, variants, skins, stealth, abilities and wild AI.
@@ -7,11 +7,11 @@ adds content, variants, skins, stealth, abilities and wild AI.
 
 | What | Path |
 |---|---|
-| The 13 species as the docs define them (stars, diet, ability, unlock level, default look) | `Assets/_Game/Scripts/Species/Content/LaunchRoster.cs` |
+| The 14 species as the docs define them (stars, diet, ability, unlock level, default look) | `Assets/_Game/Scripts/Species/Content/LaunchRoster.cs` |
 | All tuning (stars -> m/s, HP, drain; growth stages; XP curve; variants) | `Assets/_Game/Scripts/Species/Content/SpeciesTuning.cs` |
 | Extra fields on `SpeciesDefinition` (skin, ability, temperament, stealth) | `Assets/_Game/Scripts/Species/SpeciesDefinition.Content.cs` |
 | Stealth rules + per-dino component + tall-grass volume | `Content/StealthRules.cs`, `Stealth/DinoStealth.cs`, `Stealth/CoverVolume.cs` |
-| Signature abilities (13, levels 1-3) | `Abilities/SignatureAbilityRunner.cs`, `Abilities/AbilityTuning.cs` |
+| Signature abilities (14, levels 1-3) | `Abilities/SignatureAbilityRunner.cs`, `Abilities/AbilityTuning.cs` |
 | Skins (6-byte look, palette, unlocks, shader driver) | `Skins/`, shader `Assets/_Game/Art/Shaders/DinoSkin.shader` |
 | Wild dino AI and spawner | `AI/WildDinoBrain.cs`, `AI/WildDinoDecisions.cs`, `AI/WildDinoSpawner.cs` |
 | Editor tools | `Assets/_Game/Scripts/Editor/Species/` (in the Dino.Editor assembly) |
@@ -19,7 +19,7 @@ adds content, variants, skins, stealth, abilities and wild AI.
 
 ## First run in Unity
 
-1. **Dino > Species > Rebuild Species Assets**: writes `Assets/_Game/Data/Species/Species_<id>.asset` for all 13
+1. **Dino > Species > Rebuild Species Assets**: writes `Assets/_Game/Data/Species/Species_<id>.asset` for all 14
    and fills `Assets/_Game/Resources/SpeciesCatalog.asset`. Re-run after changing tuning; it keeps model/icon links.
 2. **Dino > Species > Generate Skin Pattern Masks**: writes the shared pattern `Texture2DArray` (procedural, no license).
 3. Window > General > Test Runner > EditMode > run `Dino.Species.Tests`.
@@ -51,10 +51,11 @@ Map thread: put `CoverVolume` (trigger) on tall grass and shade. Optional: imple
 | Microraptor | Carn | 60 | 5 | 10.5 | 7.5 min | 10 m (stealth) | Glide | Lv 4 |
 | Raptor | Carn | 100 | 10 | 12 | 7 min | 10 m (stealth) | Pounce | Starter |
 | Dilo | Carn | 160 | 18 | 9 | 7 min | 10 m (stealth) | Frill flash | Lv 8 |
+| Carno | Carn | 160 | 30 | 10.5 | 6.5 min | 25 m | Bull rush | Lv 10 |
 | T. rex | Carn | 400 | 50 | 7.5 | 6 min | 25 m | Roar | Lv 15 |
 
 Growth: Hatchling (20% size) -> Juvenile at 18 min -> Adolescent at 50 min -> Adult at 150 min (T. rex x1.5,
-Brachio x1.4, Trike x1.15). Ability Lv 1 from hatching, Lv 2 as adolescent, Lv 3 as adult.
+Brachio x1.4, Carno x1.2, Trike x1.15). Ability Lv 1 from hatching, Lv 2 as adolescent, Lv 3 as adult.
 
 Variants (lifetime XP): Swift (Lv 2: +12% speed, +10% stamina, -5% HP), Aquatic (Lv 3: +25% swim, -5% land speed),
 Fierce (Lv 4: +15% bite, +10% hunger), Sturdy (Lv 5: +15% HP, -5% hunger, -5% speed), Sneaky (Lv 6: 60% notice range, -10% HP).

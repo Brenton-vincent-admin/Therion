@@ -116,6 +116,12 @@ namespace Dino.Species
                     _fx.Dash(fwd, sp.runSpeed * Mathf.Lerp(0.7f, 1f, Scale) * 1.8f, spec.duration);
                     break;
 
+                case SignatureAbility.BullRush:
+                    // The fastest thing on the island in a straight line, but it can't steer mid-rush.
+                    _fx.Dash(fwd, sp.runSpeed * Mathf.Lerp(0.7f, 1f, Scale) * 1.5f, spec.duration);
+                    _stealth?.BreakStealth();
+                    break;
+
                 case SignatureAbility.Hide:
                     if (_stealth != null) { _stealth.HideActive = true; _stealth.HideLevel = Level; }
                     if (Level >= 3)
@@ -197,6 +203,7 @@ namespace Dino.Species
                 case SignatureAbility.HeadButt:
                 case SignatureAbility.HornCharge:
                 case SignatureAbility.Pounce:
+                case SignatureAbility.BullRush:
                     if (active && _fx.IsDashing) DashHits();
                     break;
 
@@ -256,12 +263,13 @@ namespace Dino.Species
                     else stun = 1.5f;
                     if (Level >= 3 && _wasStealthyAtStart) mul *= 2f;
                 }
+                if (Ability == SignatureAbility.BullRush && Level >= 3) stun = 1f; // head-ram staggers the target
                 Damage(target, go, mul);
 
                 var fx = go.GetComponentInParent<DinoStatusEffects>();
                 if (fx != null)
                 {
-                    if (Ability == SignatureAbility.HornCharge || (Ability == SignatureAbility.HeadButt && Level >= 3))
+                    if (Ability == SignatureAbility.HornCharge || Ability == SignatureAbility.BullRush || (Ability == SignatureAbility.HeadButt && Level >= 3))
                         fx.Dash(transform.forward, 9f, 0.35f);   // knock back
                     if (stun > 0f) StartCoroutine(StunRoutine(fx, stun));
                 }

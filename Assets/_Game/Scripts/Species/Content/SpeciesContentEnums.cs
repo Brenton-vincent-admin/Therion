@@ -19,6 +19,7 @@ namespace Dino.Species
         Pounce,         // Velociraptor: leap and pin small prey
         FrillFlash,     // Dilophosaurus: blind a target briefly
         Roar,           // T. rex: small dinos flee
+        BullRush,       // Carnotaurus: long straight-line charge, hard to steer
     }
 
     /// <summary>How a WILD dino of this species reacts to others.</summary>
@@ -56,6 +57,7 @@ namespace Dino.Species
                 case SignatureAbility.Pounce: return "pounce";
                 case SignatureAbility.FrillFlash: return "frill_flash";
                 case SignatureAbility.Roar: return "roar";
+                case SignatureAbility.BullRush: return "bull_rush";
                 default: return "";
             }
         }

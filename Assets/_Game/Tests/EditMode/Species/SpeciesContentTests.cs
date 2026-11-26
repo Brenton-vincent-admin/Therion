@@ -9,12 +9,12 @@ namespace Dino.Species.Tests
     // and also outside Unity with plain NUnit.
     public class RosterTests
     {
-        [Test] public void ThirteenSpecies_SixThreeFour()
+        [Test] public void FourteenSpecies_SixThreeFive()
         {
-            Assert.AreEqual(13, LaunchRoster.All.Count);
+            Assert.AreEqual(14, LaunchRoster.All.Count);
             Assert.AreEqual(6, LaunchRoster.All.Count(s => s.diet == Diet.Herbivore));
             Assert.AreEqual(3, LaunchRoster.All.Count(s => s.diet == Diet.Omnivore));
-            Assert.AreEqual(4, LaunchRoster.All.Count(s => s.diet == Diet.Carnivore));
+            Assert.AreEqual(5, LaunchRoster.All.Count(s => s.diet == Diet.Carnivore));
         }
 
         [Test] public void IdsUniqueAndLowerSnake()
@@ -26,7 +26,7 @@ namespace Dino.Species.Tests
 
         [Test] public void BrentonsMustHavesPresent()
         {
-            foreach (var id in new[] { "trex", "brachiosaurus", "pachycephalosaurus", "velociraptor", "microraptor" })
+            foreach (var id in new[] { "trex", "brachiosaurus", "pachycephalosaurus", "velociraptor", "microraptor", "carnotaurus" })
                 Assert.IsNotNull(LaunchRoster.Get(id), id);
         }
 
@@ -41,7 +41,7 @@ namespace Dino.Species.Tests
             var expected = new Dictionary<string, int>
             {
                 { "psittacosaurus", 2 }, { "gallimimus", 3 }, { "microraptor", 4 }, { "troodon", 5 }, { "stegosaurus", 6 },
-                { "dilophosaurus", 8 }, { "triceratops", 9 }, { "brachiosaurus", 12 }, { "trex", 15 },
+                { "dilophosaurus", 8 }, { "triceratops", 9 }, { "carnotaurus", 10 }, { "brachiosaurus", 12 }, { "trex", 15 },
             };
             foreach (var kv in expected) Assert.AreEqual(kv.Value, LaunchRoster.Get(kv.Key).unlockXpLevel, kv.Key);
         }
@@ -66,7 +66,7 @@ namespace Dino.Species.Tests
                 Assert.AreEqual(3, s.abilityLevelText.Length, s.id);
                 Assert.IsTrue(s.abilityLevelText.All(t => !string.IsNullOrEmpty(t)), s.id);
             }
-            Assert.AreEqual(13, LaunchRoster.All.Select(s => s.ability).Distinct().Count());
+            Assert.AreEqual(14, LaunchRoster.All.Select(s => s.ability).Distinct().Count());
         }
 
         [Test] public void StarsInRange()

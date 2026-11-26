@@ -1,6 +1,6 @@
 namespace Dino.Species
 {
-    /// <summary>Cooldowns, stamina costs and ranges for the 13 signature abilities. Pure data, tune here.</summary>
+    /// <summary>Cooldowns, stamina costs and ranges for the signature abilities. Pure data, tune here.</summary>
     public struct AbilitySpec
     {
         public float cooldown, staminaCost, duration, range, power;
@@ -27,6 +27,7 @@ namespace Dino.Species
                 case SignatureAbility.Pounce:         return S(5f, 15f, l == 1 ? 0.45f : 0.65f, 2f, 1.5f);
                 case SignatureAbility.FrillFlash:     return S(8f, 10f, l == 1 ? 2f : 3.5f, 7f, 1f);
                 case SignatureAbility.Roar:           return S(12f, 15f, 5f, l == 1 ? 15f : 25f, 1.2f);
+                case SignatureAbility.BullRush:       return S(9f, 20f, l == 1 ? 1.4f : 2.0f, 2.5f, 1.4f);
                 default:                              return S(1f, 0f, 0f, 0f, 1f);
             }
         }
