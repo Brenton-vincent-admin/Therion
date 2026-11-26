@@ -46,6 +46,7 @@ namespace Dino.Species
         float _brokenUntil;
         int _coverCount, _safeCount;
         float _variantNotice = 1f;
+        SpeciesDefinition _variantSpecies; string _variantId;
 
         void Awake()
         {
@@ -71,6 +72,13 @@ namespace Dino.Species
         void Update()
         {
             if (Species == null) return;
+            // Self-configure: GameSession may add this component by reflection after Setup, and the
+            // dino can grow or change variant at any time.
+            if (_variantSpecies != Species || _variantId != Actor.VariantId)
+            {
+                _variantSpecies = Species; _variantId = Actor.VariantId;
+                RefreshVariant();
+            }
             var input = Actor.Motor != null ? Actor.Motor.Input : default;
 
             Stance stance;
