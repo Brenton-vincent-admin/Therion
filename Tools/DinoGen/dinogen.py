@@ -247,6 +247,30 @@ def import_base(spec):
     co[:, 0] -= np.interp(co[:, 1], centres, mids) + B.get("x_shift", 0.0)
     log("midline offset range", round(float(mids.min()), 3), round(float(mids.max()), 3))
     sm = lambda t: np.clip(t, 0, 1) ** 2 * (3 - 2 * np.clip(t, 0, 1))
+    AR = B.get("arm_scale")         # shrink the arms toward the shoulder (both sides)
+    if AR:
+        pts = [np.array(p) for p in AR["chain"]]
+        ax = np.abs(co) * (1, 0, 0) + co * (0, 1, 1)
+        dist = np.full(len(co), 1e9)
+        for a_, b_ in zip(pts, pts[1:]):
+            ab = b_ - a_
+            t = np.clip(((ax - a_) @ ab) / (ab @ ab), 0, 1)
+            dist = np.minimum(dist, np.linalg.norm(ax - (a_ + t[:, None] * ab), axis=1))
+        w = sm(1 - dist / AR["radius"]) * sm((np.abs(co[:, 0]) - AR["x_min"]) / 0.06)
+        bx = AR.get("free")         # the hanging forearm and hand: everything inside this box moves fully
+        if bx:
+            inside = ((ax[:, 0] > bx["x"]) & (ax[:, 1] > bx["y"][0]) & (ax[:, 1] < bx["y"][1]) & (ax[:, 2] > bx["z"][0]))
+            w = np.maximum(w, inside * sm((bx["z"][1] - ax[:, 2]) / 0.1))
+        new = pts[0] + (ax - pts[0]) * AR["f"]
+        ax2 = ax + (new - ax) * w[:, None]
+        co[:, 0] = np.sign(co[:, 0]) * ax2[:, 0]
+        co[:, 1:] = ax2[:, 1:]
+    for TH in B.get("thicken", []):  # add meat around the midline (tail base, hips)
+        y0, y1 = TH["y"]
+        w = sm((co[:, 1] - y0) / TH["fade"]) * sm((y1 - co[:, 1]) / TH["fade"])
+        zc = np.interp(co[:, 1], TH["zc"][0], TH["zc"][1])
+        co[:, 0] *= 1 + TH["f"] * w
+        co[:, 2] = zc + (co[:, 2] - zc) * (1 + TH["f"] * w * (co[:, 2] > TH.get("z_min", -1)))
     HS = B.get("head_scale")        # enlarge the head about the neck joint
     if HS:
         w = sm((HS["y1"] - co[:, 1]) / (HS["y1"] - HS["y0"]))
