@@ -298,19 +298,20 @@ def build_high(spec):
     m.iterations = spec.get("smooth_iters", 12)
     apply_modifier(high, m)
     extra = []
-    O = spec.get("osteoderms")
-    if O:
+    groups = [g for g in (spec.get("osteoderms"), spec.get("spikes")) if g]
+    if groups:
         bpy.context.view_layer.update()
-        ctrl = [p["ctrl"] for p in spec["lofts"] if p["name"] == O["ctrl"]][0]
         bm = bmesh.new()
         n = 0
+    for O in groups:
+        ctrl = [p["ctrl"] for p in spec["lofts"] if p["name"] == O["ctrl"]][0]
         for ri, row in enumerate(O["rows"]):
             ang = math.radians(row["angle"])
             y = O["y"][0] + (ri % 2) * O["spacing"] * 0.5
             i = 0
             while y < O["y"][1]:
                 c = interp_ctrl(ctrl, y)
-                taper = min(1.0, max(0.25, c[4] / 0.45))
+                taper = min(1.0, max(0.25, c[4] / 0.45)) if O.get("taper", True) else 1.0
                 jit = ((i * 7919 + ri * 104729) % 100) / 100.0
                 for sx in ((1, -1) if row["angle"] > 0 else (1,)):
                     dirv = Vector((sx * math.sin(ang), 0, math.cos(ang)))
@@ -324,6 +325,7 @@ def build_high(spec):
                     n += 1
                 y += O["spacing"] * (0.85 + 0.3 * jit)
                 i += 1
+    if groups:
         me = bpy.data.meshes.new("Osteoderms")
         bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
         # close the cone bases so the voxel remesh treats them as solids

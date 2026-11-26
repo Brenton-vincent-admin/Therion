@@ -344,12 +344,14 @@ CARNO_AI.update({
         {"name": "Body", "ctrl": A_BODY},
         {"name": "Head", "ctrl": A_HEAD},
         {"name": "Jaw", "ctrl": A_JAW},
-        {"name": "Horn", "with_base": True, "mirror": True, "ref": (0, 1, 0), "n": 2.0, "segs": 16, "ctrl": [
-            (0.15, -2.55, 2.90, 0.085, 0.075), (0.23, -2.545, 2.965, 0.075, 0.065), (0.30, -2.54, 3.01, 0.058, 0.050),
-            (0.345, -2.535, 3.04, 0.036, 0.031), (0.372, -2.53, 3.056, 0.016, 0.015)]},
+        {"name": "Horn", "with_base": True, "mirror": True, "ref": (1, 0, 0), "n": 2.0, "segs": 16, "ctrl": [
+            (0.15, -2.52, 2.89, 0.080, 0.085), (0.195, -2.63, 2.96, 0.066, 0.072), (0.235, -2.75, 3.01, 0.050, 0.054),
+            (0.262, -2.86, 3.04, 0.032, 0.034), (0.278, -2.95, 3.055, 0.013, 0.013)]},
     ],
     "ellipsoids": [
         {"name": "Brow", "with_base": True, "c": (0.165, -2.71, 2.835), "r": (0.055, 0.13, 0.035), "rot": (14, 0, -15)},
+        {"name": "SnoutBlunt", "with_base": True, "c": (0.0, -3.19, 2.61), "r": (0.105, 0.10, 0.125)},
+        {"name": "ChinBlunt", "with_base": True, "c": (0.0, -3.18, 2.375), "r": (0.095, 0.09, 0.075)},
     ],
     "cuts": [
         {"name": "Mouth", "box": True, "c": (0, -3.045, 2.476), "r": (0.36, 0.41, 0.021), "rot": (7, 0, 0)},
@@ -381,7 +383,7 @@ CARNO_AI.update({
     "tail": {"y0": 0.55, "y1": 4.70, "bones": 8},
     "mouth_split_y": -2.72,
 })
-CARNO_AI["skin"].update({"accent_points": [((0.29, -2.54, 3.00), 0.15)], "accent_color": (0.13, 0.11, 0.085),
+CARNO_AI["skin"].update({"accent_points": [((0.225, -2.73, 2.99), 0.25)], "accent_color": (0.13, 0.11, 0.085),
                          "belly_height": (1.5, 2.3), "back": (0.10, 0.072, 0.045), "flank": (0.50, 0.30, 0.10),
                          "belly": (0.72, 0.61, 0.40), "stripe": (0.045, 0.034, 0.026), "ridge": (0.06, 0.045, 0.03)})
 def _widen(spec, f):
@@ -412,6 +414,8 @@ for _c in CARNO_AI["cuts"]:
 CARNO_AI["lofts"].append({"name": "MouthFill", "with_base": True, "n": 2.4, "segs": 20, "ctrl": [
     (0, -2.60, 2.531, 0.215, 0.055), (0, -2.80, 2.506, 0.190, 0.052), (0, -3.00, 2.482, 0.148, 0.048),
     (0, -3.15, 2.463, 0.108, 0.042), (0, -3.25, 2.451, 0.060, 0.032)]})
+CARNO_AI["spikes"] = {"ctrl": "Body", "y": (-2.30, -1.05), "spacing": 0.14, "taper": False,
+                      "rows": [{"angle": 0, "r": 0.050, "h": 0.13}, {"angle": 16, "r": 0.040, "h": 0.085}]}
 CARNO_AI["jaw_rest"] = -1.6
 CARNO_AI["teeth"].update({"upper_count": 15, "upper_len": (0.045, 0.085),
                           "overbite": {"y0": -3.045, "z0": 2.476, "slope": 0.1228, "lift": 0.018, "inset": 0.012},
