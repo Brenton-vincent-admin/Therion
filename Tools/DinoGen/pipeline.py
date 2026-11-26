@@ -870,7 +870,7 @@ def stage_export(spec, out):
     fbx = os.path.join(tdir, sid + ".fbx")
     bpy.ops.export_scene.fbx(
         filepath=fbx, use_selection=True, object_types={'ARMATURE', 'MESH'},
-        apply_scale_options='FBX_SCALE_UNITS', axis_forward='-Z', axis_up='Y',
+        apply_scale_options='FBX_SCALE_UNITS', axis_forward='Z', axis_up='Y',   # Unity then sees the head toward +Z
         add_leaf_bones=False, use_armature_deform_only=False, mesh_smooth_type='FACE', use_tspace=True,
         bake_anim=True, bake_anim_use_all_bones=True, bake_anim_use_nla_strips=False,
         bake_anim_use_all_actions=True, bake_anim_force_startend_keying=True, bake_anim_simplify_factor=0.5,
