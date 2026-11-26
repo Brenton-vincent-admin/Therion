@@ -163,7 +163,7 @@ Shader "Therion/Foliage"
                 float3 positionWS : TEXCOORD1;
                 half3 normalWS : TEXCOORD2;
                 half4 tangentWS : TEXCOORD3;
-                half2 fogAndGrad : TEXCOORD4;
+                half3 fogAndGrad : TEXCOORD4; // fog, root-to-tip, per-plant shade
                 UNITY_VERTEX_INPUT_INSTANCE_ID
                 UNITY_VERTEX_OUTPUT_STEREO
             };
@@ -181,7 +181,9 @@ Shader "Therion/Foliage"
                 half3 n = TransformObjectToWorldNormal(input.normalOS);
                 o.normalWS = normalize(lerp(n, half3(0.0, 1.0, 0.0), _NormalUp));
                 o.tangentWS = half4(TransformObjectToWorldDir(input.tangentOS.xyz), input.tangentOS.w * GetOddNegativeScale());
-                o.fogAndGrad = half2(ComputeFogFactor(o.positionCS.z), input.uv.y);
+                float4x4 m = GetObjectToWorldMatrix();
+                half shade = TherionHash(float2(m._m03, m._m23) * 0.37);
+                o.fogAndGrad = half3(ComputeFogFactor(o.positionCS.z), input.uv.y, shade);
                 return o;
             }
 
@@ -204,6 +206,7 @@ Shader "Therion/Foliage"
                     half patch = TherionNoise(input.positionWS.xz * 0.07);
                     patch = saturate(patch * 1.6 - 0.3);
                     g = lerp(g, _DryColor.rgb, patch * _DryAmount * saturate(grad + 0.25));
+                    g *= lerp(0.72, 1.18, input.fogAndGrad.z);
                     albedo = lerp(albedo, albedo * g, _Gradient);
                     occlusion = lerp(1.0, lerp(0.45, 1.0, grad), _Gradient);
                 }

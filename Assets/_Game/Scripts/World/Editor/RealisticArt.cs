@@ -29,8 +29,8 @@ namespace Dino.World.EditorTools
             Color dry = Color.Lerp(art.grassTip, new Color(0.62f, 0.55f, 0.24f), 0.6f);
             var shortMat = GrassMaterial(shader, "M_GrassShort", art.grassRoot, art.grassTip, dry, 0.35f, 0.45f, 0.12f);
             var tallMat = GrassMaterial(shader, "M_GrassTall", art.grassRoot * 0.9f, Color.Lerp(art.grassTip, dry, 0.35f), dry, 0.5f, 1.0f, 0.3f);
-            g.shortTuft = TuftPrefab("GrassShort", Tuft("GrassShort", 22, 0.30f, 0.22f, 0.45f, 0.030f, 11), shortMat);
-            g.tallTuft = TuftPrefab("GrassTall", Tuft("GrassTall", 12, 0.28f, 0.60f, 1.0f, 0.034f, 23), tallMat);
+            g.shortTuft = TuftPrefab("GrassShort", Tuft("GrassShort", 34, 0.42f, 0.18f, 0.42f, 0.028f, 11), shortMat);
+            g.tallTuft = TuftPrefab("GrassTall", Tuft("GrassTall", 16, 0.34f, 0.55f, 0.95f, 0.032f, 23), tallMat);
             return g;
         }
 

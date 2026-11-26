@@ -54,7 +54,7 @@ namespace Dino.World.EditorTools
             public float min, max;
             public bool byLongest, layFlat, wind, collider = true;
             public float sink;
-            public int lod0 = 40000;
+            public int lod0 = 250000;
         }
 
         static readonly string[] NotOutdoor = { "pot", "potted", "planter", "vase", "indoor", "christmas", "house", "wooden", "furniture", "stump" };
@@ -62,30 +62,30 @@ namespace Dino.World.EditorTools
         static readonly Slot[] Slots =
         {
             new Slot { kind = WorldPropKind.Tree, ids = new[] { "island_tree_01", "island_tree_02", "jacaranda_tree", "tree_small_02" },
-                searchAny = new[] { "tree" }, searchNone = NotOutdoor, assets = 2, min = 8f, max = 14f, wind = true, lod0 = 45000 },
+                searchAny = new[] { "tree" }, searchNone = NotOutdoor, assets = 2, min = 8f, max = 14f, wind = true, lod0 = 110000 },
             new Slot { kind = WorldPropKind.Pine, ids = new[] { "fir_tree_01", "pine_tree_01", "fir_sapling_medium", "fir_sapling" },
-                searchAny = new[] { "fir", "pine", "conifer" }, searchNone = NotOutdoor, assets = 1, min = 9f, max = 15f, wind = true, lod0 = 40000 },
+                searchAny = new[] { "fir", "pine", "conifer" }, searchNone = NotOutdoor, assets = 1, min = 9f, max = 15f, wind = true, lod0 = 250000 },
             new Slot { kind = WorldPropKind.SwampTree, ids = new[] { "island_tree_03", "island_tree_02", "jacaranda_tree" },
-                searchAny = new[] { "tree" }, searchNone = NotOutdoor, assets = 1, min = 8f, max = 13f, wind = true, lod0 = 45000 },
+                searchAny = new[] { "tree" }, searchNone = NotOutdoor, assets = 1, min = 8f, max = 13f, wind = true, lod0 = 110000 },
             new Slot { kind = WorldPropKind.Rock, ids = new[] { "boulder_01", "rock_moss_set_01", "rock_moss_set_02", "namaqualand_boulder_02", "rock_07", "rock_09", "coast_rocks_01" },
                 searchAny = new[] { "boulder", "rock" }, searchNone = new[] { "wall", "brick", "cliff", "face" }, assets = 3, variantsPerAsset = 3,
-                min = 1.3f, max = 3.2f, byLongest = true, sink = 0.14f, lod0 = 6000 },
+                min = 1.3f, max = 3.2f, byLongest = true, sink = 0.14f, lod0 = 12000 },
             new Slot { kind = WorldPropKind.Log, ids = new[] { "dead_tree_trunk", "dead_tree_trunk_02", "tree_stump_01", "tree_stump_02" },
                 searchAny = new[] { "trunk", "log", "stump" }, searchNone = new[] { "pot", "bench", "furniture", "cabin" }, assets = 2,
-                min = 3f, max = 6.5f, byLongest = true, layFlat = true, sink = 0.1f, lod0 = 8000 },
+                min = 3f, max = 6.5f, byLongest = true, layFlat = true, sink = 0.1f, lod0 = 15000 },
             new Slot { kind = WorldPropKind.BerryBush, ids = new[] { "shrub_01", "shrub_02", "shrub_03", "searsia_lucida" },
                 searchAny = new[] { "shrub", "bush" }, searchNone = NotOutdoor, assets = 2, variantsPerAsset = 2,
-                min = 1.0f, max = 1.6f, wind = true, collider = false, lod0 = 10000 },
+                min = 1.0f, max = 1.6f, wind = true, collider = false, lod0 = 25000 },
             new Slot { kind = WorldPropKind.LeafShrub, ids = new[] { "searsia_burchellii", "shrub_04", "shrub_sorrel_01", "shrub_02" },
                 searchAny = new[] { "shrub", "bush" }, searchNone = NotOutdoor, assets = 2, variantsPerAsset = 2,
-                min = 1.3f, max = 2.1f, wind = true, collider = false, lod0 = 12000 },
+                min = 1.3f, max = 2.1f, wind = true, collider = false, lod0 = 30000 },
             new Slot { kind = WorldPropKind.Fern, ids = new[] { "fern_02", "fern_01", "nettle_plant", "weed_plant_02", "periwinkle_plant" },
                 searchAny = new[] { "fern", "weed", "nettle" }, searchNone = NotOutdoor, assets = 2, variantsPerAsset = 2,
-                min = 0.55f, max = 0.95f, wind = true, collider = false, lod0 = 5000 },
+                min = 0.55f, max = 0.95f, wind = true, collider = false, lod0 = 12000 },
             new Slot { kind = WorldPropKind.TallLeafTree, ids = new[] { "jacaranda_tree", "island_tree_01", "island_tree_02" },
-                searchAny = new[] { "tree" }, searchNone = NotOutdoor, assets = 1, min = 11f, max = 14f, wind = true, lod0 = 45000 },
+                searchAny = new[] { "tree" }, searchNone = NotOutdoor, assets = 1, min = 11f, max = 14f, wind = true, lod0 = 110000 },
             new Slot { kind = WorldPropKind.GreatTree, ids = new[] { "island_tree_01", "jacaranda_tree", "island_tree_02" },
-                searchAny = new[] { "tree" }, searchNone = NotOutdoor, assets = 1, min = 30f, max = 34f, wind = true, lod0 = 140000 },
+                searchAny = new[] { "tree" }, searchNone = NotOutdoor, assets = 1, min = 30f, max = 34f, wind = true, lod0 = 300000 },
         };
 
         static readonly List<string> Credits = new List<string>();
@@ -194,7 +194,7 @@ namespace Dino.World.EditorTools
                 {
                     var a = HdrAnalysis.Analyze(path);
                     // Bring every sky to the same brightness so the lighting numbers below always fit.
-                    exposure = Mathf.Clamp(0.55f / Mathf.Max(0.02f, a.skyLuminance), 0.35f, 3f);
+                    exposure = Mathf.Clamp(0.42f / Mathf.Max(0.02f, a.skyLuminance), 0.3f, 3f);
                     art.sunDirection = a.sunDirection;
                     art.ambientSky = Tone(a.sky * exposure, 1.4f);
                     art.ambientEquator = Tone(a.horizon * exposure, 1.2f);
@@ -233,8 +233,29 @@ namespace Dino.World.EditorTools
             for (int i = 0; i < Ground.Length; i++)
             {
                 var (layer, tile, ids) = Ground[i];
+                var order = new List<string>(ids);
+                if (layer == "Grass")
+                {
+                    // Look at every candidate photo and start with the greenest one.
+                    var score = new Dictionary<string, float>();
+                    foreach (var id in ids)
+                    {
+                        Step($"Ground: comparing grass photos ({id})", 0.05f);
+                        string diff = $"{folder}/{layer}_{id}_diff.jpg";
+                        if (!File.Exists(diff) && !FetchGroundMap(id, diff, @"_(diff|col|color|albedo)_2k\.jpg$", "_diff_2k.jpg")) { score[id] = -1f; continue; }
+                        try
+                        {
+                            var c = AverageColor(diff);
+                            score[id] = c.g - Mathf.Max(c.r, c.b);
+                            report.AppendLine($"  grass candidate {id}: average colour ({c.r:0.00}, {c.g:0.00}, {c.b:0.00})");
+                        }
+                        catch (Exception) { score[id] = -1f; }
+                    }
+                    order.Sort((x, y) => score[y].CompareTo(score[x]));
+                }
+
                 TerrainLayer tl = null;
-                foreach (var id in ids)
+                foreach (var id in order)
                 {
                     Step($"Ground: {layer} ({id})", 0.06f + 0.14f * i / Ground.Length);
                     tl = GroundLayer(folder, layer, tile, id, art);
@@ -253,22 +274,24 @@ namespace Dino.World.EditorTools
             art.forestFloor = null;
         }
 
+        static bool FetchGroundMap(string id, string path, string pattern, string cdnSuffix)
+        {
+            var files = Files(id);
+            string u = FindUrl(files, s => Regex.IsMatch(s, pattern));
+            if (u == null && files == null && cdnSuffix != null) u = $"https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/{id}/{id}{cdnSuffix}";
+            return u != null && Download(u, path);
+        }
+
         static TerrainLayer GroundLayer(string folder, string layer, float tile, string id, WorldArtSet art)
         {
             string diff = $"{folder}/{layer}_{id}_diff.jpg", nor = $"{folder}/{layer}_{id}_normal.jpg";
             string arm = $"{folder}/{layer}_{id}_arm.jpg", disp = $"{folder}/{layer}_{id}_disp.png", mask = $"{folder}/{layer}_{id}_mask.png";
-            if (!File.Exists(diff))
+            if (!File.Exists(diff) && !FetchGroundMap(id, diff, @"_(diff|col|color|albedo)_2k\.jpg$", "_diff_2k.jpg")) return null;
+            if (!File.Exists(nor)) FetchGroundMap(id, nor, @"_nor_gl_2k\.jpg$", "_nor_gl_2k.jpg");
+            if (!File.Exists(mask))
             {
-                var files = Files(id);
-                string cdn = files == null ? $"https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/{id}/{id}" : null;
-                string u = FindUrl(files, s => Regex.IsMatch(s, @"_(diff|col|color|albedo)_2k\.jpg$")) ?? (cdn != null ? cdn + "_diff_2k.jpg" : null);
-                if (u == null || !Download(u, diff)) return null;
-                u = FindUrl(files, s => Regex.IsMatch(s, @"_nor_gl_2k\.jpg$")) ?? (cdn != null ? cdn + "_nor_gl_2k.jpg" : null);
-                if (u != null) Download(u, nor);
-                u = FindUrl(files, s => Regex.IsMatch(s, @"_arm_2k\.jpg$"));
-                if (u != null) Download(u, arm);
-                u = FindUrl(files, s => Regex.IsMatch(s, @"_(disp|height)_2k\.png$")) ?? FindUrl(files, s => Regex.IsMatch(s, @"_(disp|height)_2k\.jpg$"));
-                if (u != null) Download(u, disp);
+                FetchGroundMap(id, arm, @"_arm_2k\.jpg$", null);
+                if (!FetchGroundMap(id, disp, @"_(disp|height)_2k\.png$", null)) FetchGroundMap(id, disp, @"_(disp|height)_2k\.jpg$", null);
             }
 
             Color average = new Color(0.3f, 0.36f, 0.16f);
@@ -312,10 +335,11 @@ namespace Dino.World.EditorTools
             if (layer == "Grass")
             {
                 // Grass blades take their colour from the ground photo so the two blend together.
+                // Always a living green, however pale the photo is; only the exact hue follows it.
                 Color.RGBToHSV(average, out float h, out float s, out float v);
-                h = Mathf.Clamp(h, 0.17f, 0.36f); // keep it in the yellow-green to green range
-                art.grassRoot = Color.HSVToRGB(h, Mathf.Clamp(s * 1.05f, 0.35f, 0.8f), Mathf.Clamp(v * 0.75f, 0.10f, 0.30f));
-                art.grassTip = Color.HSVToRGB(Mathf.Max(0.17f, h - 0.02f), Mathf.Clamp(s * 0.95f, 0.35f, 0.75f), Mathf.Clamp(v * 1.75f, 0.32f, 0.62f));
+                h = Mathf.Clamp(h, 0.23f, 0.32f);
+                art.grassRoot = Color.HSVToRGB(h + 0.01f, Mathf.Clamp(s * 1.3f, 0.60f, 0.85f), Mathf.Clamp(v * 0.6f, 0.10f, 0.17f));
+                art.grassTip = Color.HSVToRGB(h - 0.02f, Mathf.Clamp(s * 1.2f, 0.58f, 0.78f), Mathf.Clamp(v * 1.15f, 0.30f, 0.42f));
             }
             return tl;
         }
@@ -438,7 +462,12 @@ namespace Dino.World.EditorTools
                                 collider = slot.collider, decorate = Decorator(slot.kind),
                             };
                             var baked = ModelBaker.Bake(fbx, o);
-                            foreach (var b in baked) if (b.prefab) prefabs.Add(b.prefab);
+                            foreach (var b in baked)
+                            {
+                                if (!b.prefab) continue;
+                                prefabs.Add(b.prefab);
+                                report.AppendLine($"  {b.prefab.name}: {b.sourceTriangles} triangles in the scan, {b.triangles} used, {b.size.y:0.0} m tall");
+                            }
                             if (baked.Count > 0) { used.Add(id); Credits.Add($"{slot.kind}: {id} https://polyhaven.com/a/{id}"); }
                         }
                     }

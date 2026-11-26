@@ -74,7 +74,7 @@ namespace Dino.World.EditorTools
             try
             {
                 Progress("Graphics settings", 0.02f);
-                GraphicsTiers.EnsureSetUp();
+                GraphicsTiers.SetUp();
                 Progress("Generating terrain shape", 0.05f);
                 var data = IslandGenerator.Generate(spec);
                 Progress("Placing nests, water and food", 0.25f);
@@ -244,6 +244,9 @@ namespace Dino.World.EditorTools
                     if (forestLayer) forest = 0.75f + 0.3f * patch;
                     else mud += 0.3f + 0.2f * patch;
                 }
+                // Big soft patches of leaf litter break up the repeating grass photo seen from far away.
+                if (rock < 0.5f && biome != BiomeIds.SwampCode)
+                    mud += 0.55f * IslandNoise.SmoothStep(0.56f, 0.74f, IslandNoise.Fbm(u * 11f, v * 11f, spec.seed + 903, 3));
                 float grass = Mathf.Max(0.05f, 1.1f - rock - sand - mud - forest + (patch - 0.5f) * 0.3f);
 
                 weights[0] = grass; weights[1] = sand; weights[2] = mud; weights[3] = rock;
@@ -325,18 +328,18 @@ namespace Dino.World.EditorTools
                 float lawn, tall;
                 switch (data.Biomes[i])
                 {
-                    case BiomeIds.MeadowCode: lawn = 11f; tall = 1.2f; break;
-                    case BiomeIds.LakeCode: lawn = 9f; tall = 1.2f; break;
-                    case BiomeIds.RiverbanksCode: lawn = 8f; tall = 2.2f; break;
-                    case BiomeIds.SwampCode: lawn = 5f; tall = 3f; break;
-                    case BiomeIds.ForestCode: lawn = 4.5f; tall = 0.6f; break;
-                    case BiomeIds.HighlandsCode: lawn = 1.2f; tall = 0.3f; break;
+                    case BiomeIds.MeadowCode: lawn = 16f; tall = 1.6f; break;
+                    case BiomeIds.LakeCode: lawn = 14f; tall = 1.6f; break;
+                    case BiomeIds.RiverbanksCode: lawn = 12f; tall = 2.6f; break;
+                    case BiomeIds.SwampCode: lawn = 8f; tall = 3.5f; break;
+                    case BiomeIds.ForestCode: lawn = 8f; tall = 1f; break;
+                    case BiomeIds.HighlandsCode: lawn = 2f; tall = 0.4f; break;
                     default: lawn = 0f; tall = 0f; break;
                 }
                 float patch = IslandNoise.Fbm(u * 40f, v * 40f, spec.seed + 777, 3);
                 float clump = IslandNoise.Fbm(u * 90f, v * 90f, spec.seed + 778, 2);
                 float thin = 1f - IslandNoise.SmoothStep(18f, 32f, data.SlopeAt(ix, iz));
-                shortLayer[z, x] = Mathf.Min(16, Mathf.RoundToInt(lawn * thin * Mathf.Clamp(patch * 1.5f + 0.1f, 0.3f, 1f)));
+                shortLayer[z, x] = Mathf.Min(16, Mathf.RoundToInt(lawn * thin * Mathf.Clamp(patch * 1.4f + 0.3f, 0.55f, 1f)));
                 tallLayer[z, x] = Mathf.Min(8, Mathf.RoundToInt(tall * thin * Mathf.Clamp01(clump * 3.2f - 1.2f) * 2f));
             }
             td.SetDetailLayer(0, 0, 0, shortLayer);
@@ -347,6 +350,8 @@ namespace Dino.World.EditorTools
         {
             return new DetailPrototype
             {
+                positionJitter = 1f, // scattered, not in rows
+                alignToGround = 0.6f,
                 prototype = prefab,
                 usePrototypeMesh = true,
                 useInstancing = true,
@@ -803,7 +808,7 @@ namespace Dino.World.EditorTools
             var sun = sunGo.AddComponent<Light>();
             sun.type = LightType.Directional;
             sun.color = new Color(1f, 0.955f, 0.87f);
-            sun.intensity = photoSky ? 2.2f : 1.5f;
+            sun.intensity = photoSky ? 1.35f : 1.3f;
             sun.shadows = LightShadows.Soft;
             sun.shadowStrength = photoSky ? 1f : 0.85f;
             sun.shadowBias = 0.6f;
@@ -817,7 +822,7 @@ namespace Dino.World.EditorTools
             RenderSettings.ambientGroundColor = photoSky ? art.ambientGround : new Color(0.30f, 0.27f, 0.22f);
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.ExponentialSquared;
-            RenderSettings.fogDensity = 0.0019f;
+            RenderSettings.fogDensity = 0.0012f;
             RenderSettings.fogColor = photoSky ? art.fogColor : new Color(0.70f, 0.77f, 0.84f);
 
             // Reflections: a cubemap of this sky, saved with the scene.
@@ -858,8 +863,8 @@ namespace Dino.World.EditorTools
             bloom.threshold.Override(1.0f);
             bloom.scatter.Override(0.72f);
             var color = profile.Add<ColorAdjustments>(true);
-            color.postExposure.Override(0.2f);
-            color.contrast.Override(12f);
+            color.postExposure.Override(0f);
+            color.contrast.Override(8f);
             color.saturation.Override(4f);
             var wb = profile.Add<WhiteBalance>(true);
             wb.temperature.Override(5f);

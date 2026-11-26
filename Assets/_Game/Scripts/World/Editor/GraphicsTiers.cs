@@ -87,6 +87,8 @@ namespace Dino.World.EditorTools
                 if (ppd) post.objectReferenceValue = ppd;
                 else Debug.LogWarning("[Graphics] URP's PostProcessData asset wasn't found; post-processing may be off.");
             }
+            // Copy depth right after the solid objects, so water (drawn later) can read how deep it is.
+            SetInt(so, "m_CopyDepthMode", 0, quiet: true);
             so.ApplyModifiedPropertiesWithoutUndo();
 
             if (ssao) AddAmbientOcclusion(data);

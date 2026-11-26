@@ -31,7 +31,7 @@ namespace Dino.World
 
         public Settings low = new Settings { grassDistance = 28f, grassDensity = 0.25f, treeDistance = 220f, terrainPixelError = 10f, groundDetailDistance = 90f, foodDistance = 90f };
         public Settings medium = new Settings { grassDistance = 48f, grassDensity = 0.5f, treeDistance = 380f, terrainPixelError = 6f, groundDetailDistance = 200f, foodDistance = 130f };
-        public Settings high = new Settings { grassDistance = 95f, grassDensity = 1f, treeDistance = 1200f, terrainPixelError = 3f, groundDetailDistance = 900f, foodDistance = 320f };
+        public Settings high = new Settings { grassDistance = 130f, grassDensity = 1f, treeDistance = 1200f, terrainPixelError = 3f, groundDetailDistance = 900f, foodDistance = 320f };
 
         public static Tier Current { get; private set; } = Tier.Medium;
 

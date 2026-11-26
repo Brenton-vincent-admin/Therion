@@ -43,7 +43,7 @@ namespace Dino.World.EditorTools
             public Mesh mesh;
             public Vector3 size;
             public float trunkRadius;
-            public int triangles;
+            public int triangles, sourceTriangles;
         }
 
         class Part
@@ -186,6 +186,7 @@ namespace Dino.World.EditorTools
 
             // LODs
             int tris = TriangleCount(mesh0);
+            int sourceTris = tris;
             var lods = new List<Mesh>();
             if (tris > o.lod0Triangles)
             {
@@ -248,7 +249,7 @@ namespace Dino.World.EditorTools
                 }
             }
 
-            var baked = new Baked { mesh = saved[0], size = size, trunkRadius = trunk, triangles = tris };
+            var baked = new Baked { mesh = saved[0], size = size, trunkRadius = trunk, triangles = tris, sourceTriangles = sourceTris };
             o.decorate?.Invoke(go, baked);
             baked.prefab = PrefabUtility.SaveAsPrefabAsset(go, $"{o.outFolder}/P_{baseName}.prefab");
             Object.DestroyImmediate(go);
@@ -294,7 +295,7 @@ namespace Dino.World.EditorTools
                 normalTex = AssetDatabase.LoadAssetAtPath<Texture>(normalPath);
             }
 
-            bool foliage = hasAlpha || LeafName.IsMatch(srcName);
+            bool foliage = hasAlpha;
             var foliageShader = Shader.Find("Therion/Foliage");
             bool useFoliage = o.wind && foliageShader;
             var shader = useFoliage ? foliageShader : PlaceholderArt.LitShader();
@@ -327,6 +328,7 @@ namespace Dino.World.EditorTools
                 m.SetFloat("_AlphaClip", 0f);
                 m.SetFloat("_Cull", 2f);
                 m.DisableKeyword("_ALPHATEST_ON");
+                m.SetOverrideTag("RenderType", "");
                 m.renderQueue = (int)RenderQueue.Geometry;
             }
             if (useFoliage)
@@ -382,8 +384,11 @@ namespace Dino.World.EditorTools
             var rx = new Regex(pattern, RegexOptions.IgnoreCase);
             foreach (var f in files)
             {
+                // The opacity map must belong to this exact texture set ("x_leaves_alpha" is not the alpha of "x").
                 string fn = Path.GetFileName(f).ToLowerInvariant();
-                if (fn.StartsWith(prefix) && rx.IsMatch(fn)) return f;
+                if (!fn.StartsWith(prefix)) continue;
+                var m = rx.Match(fn, prefix.Length);
+                if (m.Success && m.Index == prefix.Length) return f;
             }
             return null;
         }
@@ -462,6 +467,7 @@ namespace Dino.World.EditorTools
                 int target = Mathf.Max(12, Mathf.RoundToInt(tris.Length / 3 * fraction));
                 int[] reduced = null;
                 if (s < foliage.Length && foliage[s]) reduced = DropIslands(v, tris, fraction, extent, min);
+                if (reduced == null) reduced = SimplifyWithMeshLod(v, tris, target);
                 if (reduced == null) reduced = ClusterToTarget(v, tris, extent, min, target);
 
                 var remap = new Dictionary<int, int>();
@@ -492,6 +498,69 @@ namespace Dino.World.EditorTools
             if (hasUV) mesh.RecalculateTangents();
             mesh.RecalculateBounds();
             return mesh;
+        }
+
+        /// <summary>
+        /// Unity's own simplifier (Mesh LOD, Unity 6.2+): keeps the silhouette and the texture mapping.
+        /// Returns triangles that index the original vertices, or null when it isn't available.
+        /// </summary>
+        static int[] SimplifyWithMeshLod(Vector3[] v, int[] tris, int target)
+        {
+            if (tris.Length / 3 <= target) return tris;
+            Mesh temp = null;
+            try
+            {
+                var getLods = typeof(Mesh).GetMethod("GetLods", new[] { typeof(int) });
+                if (getLods == null) return null;
+                temp = new Mesh { indexFormat = IndexFormat.UInt32 };
+                temp.vertices = v;
+                temp.SetTriangles(tris, 0, false);
+                temp.RecalculateBounds();
+                MeshLodUtility.GenerateMeshLods(temp, -1);
+                if (!(getLods.Invoke(temp, new object[] { 0 }) is System.Array ranges) || ranges.Length < 2) return null;
+
+                // Pick the most detailed level that fits the budget (levels get lighter as they go).
+                long start = -1, count = 0;
+                foreach (var range in ranges)
+                {
+                    var t = range.GetType();
+                    long s = Convert.ToInt64(Member(t, range, "indexStart"));
+                    long c = Convert.ToInt64(Member(t, range, "indexCount"));
+                    if (c < 9) continue;
+                    start = s; count = c;
+                    if (c / 3 <= target) break;
+                }
+                if (start < 0) return null;
+
+                long subStart = temp.GetSubMesh(0).indexStart;
+                var result = new int[count];
+                using (var data = Mesh.AcquireReadOnlyMeshData(temp))
+                {
+                    var d = data[0];
+                    if (d.indexFormat == IndexFormat.UInt32)
+                    {
+                        var idx = d.GetIndexData<uint>();
+                        for (long i = 0; i < count; i++) result[i] = (int)idx[(int)(subStart + start + i)];
+                    }
+                    else
+                    {
+                        var idx = d.GetIndexData<ushort>();
+                        for (long i = 0; i < count; i++) result[i] = idx[(int)(subStart + start + i)];
+                    }
+                }
+                foreach (int i in result) if (i < 0 || i >= v.Length) return null;
+                return result;
+            }
+            catch (Exception) { return null; }
+            finally { if (temp) Object.DestroyImmediate(temp); }
+        }
+
+        static object Member(Type t, object o, string name)
+        {
+            var p = t.GetProperty(name);
+            if (p != null) return p.GetValue(o);
+            var f = t.GetField(name);
+            return f != null ? f.GetValue(o) : 0;
         }
 
         static long CellKey(Vector3 p, Vector3 min, float cell)
