@@ -101,7 +101,7 @@ namespace Dino.Species.AI
         /// <summary>Wild dinos use natural-looking variations of the species' default look.</summary>
         static SkinLoadout WildSkin(SpeciesDefinition s)
         {
-            var natural = new[] { SkinColor.Moss, SkinColor.Sand, SkinColor.Clay, SkinColor.Stone, SkinColor.Leaf, SkinColor.Charcoal };
+            var natural = new[] { SkinColor.Olive, SkinColor.Sand, SkinColor.Umber, SkinColor.Slate, SkinColor.Terracotta, SkinColor.Moss };
             var skin = s.defaultSkin;
             if (Random.value < 0.5f) skin.baseColor = (byte)natural[Random.Range(0, natural.Length)];
             return skin;

@@ -76,8 +76,10 @@ namespace Dino.Species.Editor
             var fbx = AssetDatabase.LoadAssetAtPath<GameObject>(fbxPath);
             if (fbx == null) { Debug.LogError($"[Species] {fbxPath} did not import as a model."); return false; }
 
-            var instance = (GameObject)PrefabUtility.InstantiatePrefab(fbx);
-            instance.name = id;
+            // Root wrapper so the model can be turned and lifted without touching the FBX or the rig.
+            var root = new GameObject(id);
+            var instance = (GameObject)PrefabUtility.InstantiatePrefab(fbx, root.transform);
+            instance.name = "Model";
             try
             {
                 var animator = instance.GetComponent<Animator>();
@@ -94,11 +96,12 @@ namespace Dino.Species.Editor
                 }
                 BuildLods(instance, renderers);
 
-                if (instance.GetComponent<DinoSkin>() == null) instance.AddComponent<DinoSkin>();
+                root.AddComponent<DinoSkin>();
+                AlignModel(id, instance, clips);
 
                 EnsureFolder(PrefabRoot);
                 string prefabPath = $"{PrefabRoot}/{id}.prefab";
-                var prefab = PrefabUtility.SaveAsPrefabAsset(instance, prefabPath);
+                var prefab = PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
 
                 if (species != null)
                 {
@@ -108,8 +111,59 @@ namespace Dino.Species.Editor
                 }
                 else Debug.LogWarning($"[Species] No Species_{id}.asset: prefab saved but not assigned to a species.");
             }
-            finally { Object.DestroyImmediate(instance); }
+            finally { Object.DestroyImmediate(root); }
             return true;
+        }
+
+        /// <summary>
+        /// Makes the model face +Z and stand on the ground, measured from the real rig rather than assumed:
+        /// poses it in the first Idle frame (so it is never left in bind pose), turns it 180 degrees if the
+        /// head is behind the tail, then lifts or lowers it so the lowest point of the body sits at y = 0.
+        /// </summary>
+        static void AlignModel(string id, GameObject model, Dictionary<string, AnimationClip> clips)
+        {
+            model.transform.localPosition = Vector3.zero;
+            model.transform.localRotation = Quaternion.identity;
+
+            if (clips.TryGetValue("Idle", out var idle) && idle != null) idle.SampleAnimation(model, 0f);
+
+            Transform head = FindBone(model.transform, "Head"), tail = null;
+            for (int i = 12; i >= 1 && tail == null; i--) tail = FindBone(model.transform, "Tail" + i);
+            if (head != null && tail != null)
+            {
+                if (head.position.z < tail.position.z)
+                {
+                    model.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
+                    Debug.Log($"[Species] '{id}' was exported facing -Z; turned the model 180 degrees in the prefab.");
+                }
+            }
+            else Debug.LogWarning($"[Species] '{id}': no Head/Tail bones found, could not check which way it faces.");
+
+            float minY = float.MaxValue;
+            var baked = new Mesh();
+            foreach (var smr in model.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+            {
+                if (smr.sharedMesh == null || smr.name.ToUpperInvariant().EndsWith("_LOD1") || smr.name.ToUpperInvariant().EndsWith("_LOD2")) continue;
+                smr.BakeMesh(baked, true);
+                var m = smr.transform.localToWorldMatrix;
+                foreach (var v in baked.vertices) minY = Mathf.Min(minY, m.MultiplyPoint3x4(v).y);
+            }
+            Object.DestroyImmediate(baked);
+            if (minY == float.MaxValue)
+                foreach (var mr in model.GetComponentsInChildren<MeshRenderer>(true)) minY = Mathf.Min(minY, mr.bounds.min.y);
+
+            if (minY != float.MaxValue && Mathf.Abs(minY) > 0.01f && Mathf.Abs(minY) < 3f)
+            {
+                model.transform.localPosition = new Vector3(0f, -minY, 0f);
+                Debug.Log($"[Species] '{id}': lowest point in Idle was {minY:0.00} m; moved the model by {-minY:0.00} m so the feet touch the ground.");
+            }
+        }
+
+        static Transform FindBone(Transform root, string name)
+        {
+            foreach (var t in root.GetComponentsInChildren<Transform>(true))
+                if (t.name == name) return t;
+            return null;
         }
 
         static string CleanClipName(string name)
@@ -199,6 +253,9 @@ namespace Dino.Species.Editor
             if (patterns != null && mat.HasProperty("_PatternMasks")) mat.SetTexture("_PatternMasks", patterns);
             if (mat.HasProperty("_DetailAverage"))
                 mat.SetFloat("_DetailAverage", Mathf.Clamp(AverageLuminance($"{folder}/{id}_Albedo.png"), 0.05f, 1f));
+            // Matte hide with the full normal map: reads as skin, not plastic.
+            if (mat.HasProperty("_Smoothness")) mat.SetFloat("_Smoothness", 0.15f);
+            if (mat.HasProperty("_BumpScale")) mat.SetFloat("_BumpScale", 1f);
             mat.enableInstancing = true;
             EditorUtility.SetDirty(mat);
             return mat;
@@ -312,7 +369,7 @@ namespace Dino.Species.Editor
             return controller;
         }
 
-        static void BuildLods(GameObject root, Renderer[] renderers)
+        static void BuildLods(GameObject root, Renderer[] renderers) // root = the model object that owns the renderers
         {
             var levels = new List<Renderer>[] { new List<Renderer>(), new List<Renderer>(), new List<Renderer>() };
             foreach (var r in renderers)

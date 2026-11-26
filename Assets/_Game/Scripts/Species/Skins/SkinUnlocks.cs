@@ -26,6 +26,7 @@ namespace Dino.Species
             R("hardcore_adult", "Grow to Adult in Hardcore", new[] { SkinColor.Gold, SkinColor.Crystal }, null),
             R("play_together", "Play with a friend", new[] { SkinColor.Coral }, null),
             R("unlock_carnotaurus", "Unlock the Carnotaurus", new[] { SkinColor.Crimson, SkinColor.Wine, SkinColor.Obsidian }, null),
+            R("level_3", "Reach level 3", new[] { SkinColor.Terracotta, SkinColor.Umber, SkinColor.Olive, SkinColor.Bone, SkinColor.Slate, SkinColor.Rust, SkinColor.Tan }, null),
         };
 
         static Reward R(string id, string hint, SkinColor[] c, SkinPattern[] p)

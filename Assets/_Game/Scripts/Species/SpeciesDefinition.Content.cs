@@ -24,7 +24,7 @@ namespace Dino.Species
 
         [Header("Skin")]
         [Tooltip("Look a brand-new player gets for this species.")]
-        public SkinLoadout defaultSkin = SkinLoadout.Of(SkinColor.Leaf, SkinColor.Cream, SkinPattern.Stripes, SkinColor.Moss, SkinColor.Sunset);
+        public SkinLoadout defaultSkin = SkinLoadout.Of(SkinColor.Olive, SkinColor.Bone, SkinPattern.None, SkinColor.Umber, SkinColor.Umber);
         [Tooltip("Where the model comes from and its license (see Docs/Species/ASSETS.md).")]
         [TextArea] public string modelSource;
 

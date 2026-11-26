@@ -63,6 +63,7 @@ namespace Dino.Species
         Leaf, Moss, Sand, Clay, Stone, Cream, Sunset, Berry, Sky, Lagoon, Grape, Sunflower,
         Coral, Mint, Charcoal, Snow, Amber, Gold, Crystal, WaterfallBlue, NightGlow,
         Crimson, Wine, Obsidian,
+        Terracotta, Umber, Olive, Bone, Slate, Rust, Tan,
     }
 
     /// <summary>Saved by value: only ever add new entries at the end. Index = slice in the pattern mask array.</summary>
@@ -97,6 +98,13 @@ namespace Dino.Species
             0x9B352C, // Crimson       (deep red; Carnotaurus flanks)
             0x7C4B42, // Wine          (dark red; Carnotaurus belly)
             0x1D1919, // Obsidian      (true black; Carnotaurus back, horns and bands)
+            0xA25E42, // Terracotta    (natural red-brown; Carnotaurus flanks)
+            0x4B3B30, // Umber         (dark earth brown)
+            0x6E6A45, // Olive         (dull green-brown)
+            0xD6CBB2, // Bone          (pale underside, horns)
+            0x5C6064, // Slate         (blue-grey)
+            0x7A4632, // Rust          (deep brown-red)
+            0x9B7F6D, // Tan           (dusty underside; Carnotaurus belly)
         };
 
         public static int Count => Hex.Length;
