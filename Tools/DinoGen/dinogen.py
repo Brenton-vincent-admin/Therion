@@ -718,7 +718,9 @@ def skin_material(spec):
     grit = noise(40.0, 6.0, 0.75)
     dust = math_('MULTIPLY', maprange(noise(1.4, 4.0, 0.6), 0.45, 0.7), maprange(nz, -0.2, 0.6))
     if RG > 0:
-        col = mixc(math_('MULTIPLY', nod, 0.22 * RG), col, S.get("dust", (0.45, 0.40, 0.34)))
+        col = mixc(math_('MULTIPLY', nod, 0.22 * RG * S.get("nodule_strength", 1.0)), col, S.get("dust", (0.45, 0.40, 0.34)))
+        crack = maprange(sc_big, 0.0, 0.07, 1.0, 0.0)          # network of deeper creases between scale plates
+        col = mixc(math_('MULTIPLY', crack, 0.45 * S.get("crackle", 0.0)), col, (0.25, 0.23, 0.22), 'MULTIPLY')
         col = mixc(math_('MULTIPLY', dust, 0.30 * RG), col, S.get("dust", (0.45, 0.40, 0.34)))
         col = mixc(maprange(grit, 0.35, 0.75, 0.0, 0.45 * RG), col, (0.2, 0.2, 0.2), 'MULTIPLY')
     col = mixc(maprange(scales, 0.0, 1.0, 0.38 + 0.35 * RG, 0.0), col, (0.3, 0.27, 0.25), 'MULTIPLY')
@@ -731,7 +733,8 @@ def skin_material(spec):
               math_('MULTIPLY', fold, -1.0 - 1.2 * RG))
     h = math_('ADD', h, math_('MULTIPLY', broad, 1.2))
     if RG > 0:
-        h = math_('ADD', h, math_('MULTIPLY', nod, 1.6 * RG))
+        h = math_('ADD', h, math_('MULTIPLY', nod, 1.6 * RG * S.get("nodule_strength", 1.0)))
+        h = math_('ADD', h, math_('MULTIPLY', crack, -1.4 * S.get("crackle", 0.0)))
         h = math_('ADD', h, math_('MULTIPLY', grit, 0.7 * RG))
     bump = node("ShaderNodeBump")
     bump.inputs["Strength"].default_value = S.get("bump_strength", 0.55)

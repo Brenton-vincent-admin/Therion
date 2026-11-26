@@ -357,8 +357,7 @@ CARNO_AI.update({
         {"name": "Nostril", "c": (0.07, -3.20, 2.60), "r": (0.015, 0.03, 0.014)},
     ],
     "osteoderms": {"ctrl": "Body", "y": (-2.0, 4.0), "spacing": 0.2,
-                   "rows": [{"angle": 0, "r": 0.036, "h": 0.040}, {"angle": 22, "r": 0.032, "h": 0.028},
-                            {"angle": 46, "r": 0.028, "h": 0.022}, {"angle": 72, "r": 0.024, "h": 0.016}]},
+                   "rows": [{"angle": 0, "r": 0.034, "h": 0.034}]},      # one low ridge row along the spine only
     "head_ctrl": A_HEAD,
     "jaw_ctrl": A_JAW,
     "teeth": {
@@ -420,7 +419,7 @@ CARNO_AI["teeth"].update({"upper_count": 15, "upper_len": (0.045, 0.085),
 CARNO_AI["skin"].update({"back": (0.050, 0.050, 0.054), "flank": (0.36, 0.115, 0.055), "belly": (0.33, 0.21, 0.15),
                          "stripe": (0.028, 0.028, 0.031), "ridge": (0.040, 0.040, 0.043),
                          "accent_color": (0.085, 0.08, 0.075), "stripe_strength": 0.9, "dust": (0.42, 0.34, 0.27),
-                         "rugged": 1.0, "roughness": 0.85, "nodule": 15.0, "scale_small": 60.0, "scale_big": 22.0,
+                         "rugged": 1.0, "roughness": 0.85, "nodule_strength": 0.0, "crackle": 1.0, "scale_small": 70.0, "scale_big": 16.0,
                          "bump_strength": 1.0, "bump_distance": 0.022})
 
 CARNO_AI["views"] = {
