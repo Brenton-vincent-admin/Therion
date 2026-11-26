@@ -22,6 +22,8 @@ namespace Dino.Input
         public bool Attack;
         /// <summary>Pressed this frame: friendly call/roar (emote, no chat).</summary>
         public bool Call;
+        /// <summary>Pressed this frame: the species' signature ability (charge, pounce, glide...).</summary>
+        public bool Ability;
         /// <summary>True when Move is already in world XZ (AI, network), false = relative to camera.</summary>
         public bool MoveIsWorldSpace;
 
@@ -37,6 +39,7 @@ namespace Dino.Input
                 Action = a.Action || b.Action,
                 Attack = a.Attack || b.Attack,
                 Call = a.Call || b.Call,
+                Ability = a.Ability || b.Ability,
                 MoveIsWorldSpace = a.MoveIsWorldSpace && b.MoveIsWorldSpace,
             };
         }

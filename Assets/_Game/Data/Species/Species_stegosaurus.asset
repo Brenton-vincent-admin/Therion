@@ -1,0 +1,149 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fab2caace9bf26ab6b46d3b05cf3407f, type: 3}
+  m_Name: Species_stegosaurus
+  m_EditorClassIdentifier: Dino.Runtime::Dino.Species.SpeciesDefinition
+  scientificName: Stegosaurus
+  temperament: 1
+  stealthy: 0
+  signatureAbility: 4
+  abilityLevelText:
+  - Tail swipe hits anything behind it
+  - Wider swipe
+  - Swipe stuns briefly
+  unlockXpLevel: 6
+  lengthMeters: 9
+  defaultSkin:
+    baseColor: 26
+    bellyColor: 2
+    pattern: 0
+    patternColor: 25
+    accentColor: 29
+    eyeColor: 16
+  modelSource: 'Quaternius Animated LowPoly Dinosaurs (CC0): Stegosaurus'
+  id: stegosaurus
+  displayName: Stego
+  kidDescription: Spiky defender that punishes attackers
+  diet: 0
+  moveType: 0
+  size: 3
+  icon: {fileID: 0}
+  modelPrefab: {fileID: 0}
+  adultHeight: 4
+  adultRadius: 1.53
+  adultModelScale: 1
+  placeholderColor: {r: 0.43137255, g: 0.41568628, b: 0.27058825, a: 1}
+  isStarter: 0
+  unlockXp: 2500
+  sortOrder: 3
+  maxHealth: 250
+  maxStamina: 100
+  maxFood: 100
+  maxWater: 100
+  foodDrainPerMinute: 14.285714
+  waterDrainPerMinute: 15.384615
+  staminaRegenPerSecond: 12.5
+  runStaminaPerSecond: 10
+  healthRegenPerSecond: 1.25
+  walkSpeed: 3
+  runSpeed: 7.5
+  swimSpeed: 3.375
+  sneakSpeed: 1.5
+  turnSpeed: 240
+  jumpHeight: 0.5
+  foods:
+  - type: 1
+    nutrition: 1
+  - type: 2
+    nutrition: 1
+  biteSize: 16
+  biteInterval: 0.6
+  reach: 2.25
+  feedHeight: 3.6
+  attackDamage: 18
+  attackCooldown: 1.3
+  noticeRadius: 25
+  sneakNoticeMultiplier: 0.7
+  growthStages:
+  - name: Hatchling
+    scale: 0.2
+    statMultiplier: 0.25
+    minutesToGrow: 18
+    xpOnReach: 0
+  - name: Juvenile
+    scale: 0.45
+    statMultiplier: 0.5
+    minutesToGrow: 32
+    xpOnReach: 50
+  - name: Adolescent
+    scale: 0.75
+    statMultiplier: 0.8
+    minutesToGrow: 100
+    xpOnReach: 100
+  - name: Adult
+    scale: 1
+    statMultiplier: 1
+    minutesToGrow: 0
+    xpOnReach: 250
+  abilityIds:
+  - tail_swipe
+  variants:
+  - id: swift
+    displayName: Swift
+    unlockXp: 300
+    healthMultiplier: 0.95
+    speedMultiplier: 1.12
+    swimMultiplier: 1
+    staminaMultiplier: 1.1
+    damageMultiplier: 1
+    noticeRadiusMultiplier: 1
+    drainMultiplier: 1
+  - id: aquatic
+    displayName: Aquatic
+    unlockXp: 700
+    healthMultiplier: 1
+    speedMultiplier: 0.95
+    swimMultiplier: 1.25
+    staminaMultiplier: 1
+    damageMultiplier: 1
+    noticeRadiusMultiplier: 1
+    drainMultiplier: 1
+  - id: fierce
+    displayName: Fierce
+    unlockXp: 1200
+    healthMultiplier: 1
+    speedMultiplier: 1
+    swimMultiplier: 1
+    staminaMultiplier: 1
+    damageMultiplier: 1.15
+    noticeRadiusMultiplier: 1
+    drainMultiplier: 1.1
+  - id: sturdy
+    displayName: Sturdy
+    unlockXp: 1800
+    healthMultiplier: 1.15
+    speedMultiplier: 0.95
+    swimMultiplier: 1
+    staminaMultiplier: 1
+    damageMultiplier: 1
+    noticeRadiusMultiplier: 1
+    drainMultiplier: 0.95
+  - id: sneaky
+    displayName: Sneaky
+    unlockXp: 2500
+    healthMultiplier: 0.9
+    speedMultiplier: 1
+    swimMultiplier: 1
+    staminaMultiplier: 1
+    damageMultiplier: 1
+    noticeRadiusMultiplier: 0.6
+    drainMultiplier: 1

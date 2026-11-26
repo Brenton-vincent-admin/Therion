@@ -15,6 +15,7 @@ namespace Dino.World
         public Transform visual;
 
         float _start, _age;
+        bool _scaleCaptured;
         Vector3 _scale = Vector3.one;
 
         public FoodType FoodType => FoodType.Meat;
@@ -25,7 +26,6 @@ namespace Dino.World
         void Awake()
         {
             _start = Mathf.Max(1f, meat);
-            if (visual) _scale = visual.localScale;
         }
         void OnEnable() => WorldRegistry.Register(this);
         void OnDisable() => WorldRegistry.Unregister(this);
@@ -41,7 +41,12 @@ namespace Dino.World
         {
             float taken = Mathf.Min(units, meat);
             meat -= taken;
-            if (visual) visual.localScale = _scale * Mathf.Lerp(0.3f, 1f, meat / _start);
+            if (visual)
+            {
+                // Captured on the first bite: Spawn assigns the visual after Awake has already run.
+                if (!_scaleCaptured) { _scale = visual.localScale; _scaleCaptured = true; }
+                visual.localScale = _scale * Mathf.Lerp(0.3f, 1f, meat / _start);
+            }
             if (meat < 1f) Destroy(gameObject);
             return taken;
         }

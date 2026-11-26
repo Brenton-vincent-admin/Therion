@@ -3,7 +3,7 @@
 Status: live on main. Changes to these contracts go through a PR touching this file.
 
 ## Basics
-- Unity **6000.0.58f2** (Unity 6.0 LTS). URP, Input System, Netcode for GameObjects 2.x, Multiplayer Services (already in Packages/manifest.json).
+- Unity **6000.6.10f1** (what Brenton has installed). URP, Input System, Netcode for GameObjects 2.x, Multiplayer Services (already in Packages/manifest.json).
 - Root namespace **`Dino`** (not the game name, so a rename never touches code). Product name, company and Android
   package id live only in `Dino.Core.GameInfo` (Assets/_Game/Scripts/Core/GameInfo.cs). Package id is a placeholder
   `com.brenton.therion` (final, never change). Game name: Therion. Repo: Brenton-vincent-admin/therion.
@@ -65,7 +65,12 @@ Species thread: add fields you need (skins etc.) rather than a parallel class; k
 
 ## Player dino (generic, data-driven)
 - `Dino.Player.DinoActor`: root component. `Species`, `StageIndex`, `VariantId`, `Stats` (SurvivalStats), `Motor`, `Growth`. `Setup(species, stage, variantId)`. Builds the model or placeholder.
-- `Dino.Player.DinoMotor`: CharacterController movement. Driven each frame by a `Dino.Input.DinoInputState` (Move, Look, Run, Jump, Action, Attack, Sneak) via `motor.Input = state`. Player input, wild-dino AI and network replicas all drive the same motor.
-- `DinoInteractor` (eat/drink/nest), `DinoGrowth`, `DinoAttack`.
-- `Dino.Session.GameSession`: spawn, faint -> Survival respawn at nest / Hardcore restart, Explorer no drain.
+- `Dino.Player.DinoMotor`: CharacterController movement. Driven each frame by a `Dino.Input.DinoInputState` (Move, Look, Run, Sneak, Jump, Action, Attack, Call, Ability, MoveIsWorldSpace) via `motor.Input = state`. Player input, wild-dino AI and network replicas all drive the same motor.
+- `DinoInteractor` (eat/drink/nest), `DinoGrowth`, `DinoAttack` (player only; wild AI bites in WildDinoBrain), `DinoStatusEffects` (ability hooks the motor reads).
+- `Dino.Session.GameSession`: spawn, faint -> Survival respawn at nest / Hardcore restart, Explorer no drain. `GameSession.Instance`, `Player`, `Mode`, `Save`, `Progression`, event `PlayerSpawned(DinoActor)`. Auto-created in any scene without one (`SessionBootstrap`; add `NoAutoSession` to opt out); builds a test meadow when the scene has no world.
+- Pause: `GameSession.OpenPause()/ClosePause()/IsPaused`, `ReleaseDinoAndPickNew()` (ends the run by choice, XP kept). `PauseStopsTime` should be set false in multiplayer.
+- `SurvivalStats.IsExhausted`: ran until empty; `CanRun` stays false until stamina is back above 25%.
+- UI kit (`Dino.UI`): `UiFactory` (Canvas, SafeArea, Panel, Button, Label), `UiSprites` (rounded panels and icons drawn in code), `UiTheme` (shared colors). Use these for new screens so everything matches.
+- Tests: EditMode in `Assets/_Game/Tests/EditMode`, PlayMode in `Assets/_Game/Tests/PlayMode` (`GameplayLoopTests` plays the loops with real physics). PlayMode tests set `SaveSystem.Folder` to a temp folder and `SessionBootstrap.Disabled = true`; do the same in yours so tests never touch a real save.
+- `Dino.Progression`: `XpCurve.XpForLevel/LevelForXp`, `ProgressionService.AddXp/IsUnlocked/IsVariantUnlocked`, `XpRewards`.
 - `Dino.Save.SaveSystem`: JSON in persistentDataPath, atomic write, autosave + on app pause.

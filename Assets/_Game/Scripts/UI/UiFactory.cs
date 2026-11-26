@@ -91,25 +91,111 @@ namespace Dino.UI
             return img;
         }
 
+        /// <summary>Rounded panel background (9-sliced) with a soft shadow.</summary>
+        public static Image Panel(RectTransform rt, Color color, int radius = 24, bool shadow = true)
+        {
+            var img = rt.gameObject.AddComponent<Image>();
+            img.sprite = UiSprites.Rounded(radius);
+            img.type = UnityEngine.UI.Image.Type.Sliced;
+            img.color = color;
+            img.raycastTarget = false;
+            if (shadow)
+            {
+                var s = rt.gameObject.AddComponent<Shadow>();
+                s.effectColor = new Color(0f, 0f, 0f, 0.35f);
+                s.effectDistance = new Vector2(0f, -5f);
+            }
+            return img;
+        }
+
+        /// <summary>
+        /// A full-screen child that stays inside the phone's safe area (clear of notches, camera holes
+        /// and rounded corners). Parent HUD and controls to this instead of the canvas.
+        /// </summary>
+        public static RectTransform SafeArea(Transform canvas)
+        {
+            var rt = Stretch("SafeArea", canvas);
+            rt.gameObject.AddComponent<SafeAreaFitter>();
+            return rt;
+        }
+
         public static Text Label(Transform parent, string text, int size, Color color, TextAnchor align = TextAnchor.MiddleCenter)
         {
             var rt = Stretch("Label", parent);
             var t = rt.gameObject.AddComponent<Text>();
             t.font = DefaultFont; t.text = text; t.fontSize = size; t.color = color; t.alignment = align;
+            t.fontStyle = FontStyle.Bold;
             t.raycastTarget = false;
             t.horizontalOverflow = HorizontalWrapMode.Wrap; t.verticalOverflow = VerticalWrapMode.Overflow;
+            // Soft drop shadow keeps text readable over bright grass and sky.
+            var shadow = rt.gameObject.AddComponent<Shadow>();
+            shadow.effectColor = new Color(0f, 0f, 0f, 0.55f);
+            float d = Mathf.Max(1.5f, size * 0.05f);
+            shadow.effectDistance = new Vector2(d, -d);
             return t;
         }
 
         public static Button Button(Transform parent, string name, string text, Vector2 anchor, Vector2 pos, Vector2 size, Color color, System.Action onClick)
         {
             var rt = Rect(name, parent, anchor, anchor, new Vector2(0.5f, 0.5f), pos, size);
-            var img = Image(rt, color);
+            var img = Panel(rt, color, Mathf.RoundToInt(Mathf.Min(28f, size.y * 0.3f)));
+            img.raycastTarget = true;
             var b = rt.gameObject.AddComponent<Button>();
             b.targetGraphic = img;
+            var colors = b.colors;
+            colors.highlightedColor = new Color(1.08f, 1.08f, 1.08f, 1f);
+            colors.pressedColor = new Color(0.8f, 0.8f, 0.8f, 1f);
+            colors.disabledColor = new Color(1f, 1f, 1f, 0.75f);
+            colors.fadeDuration = 0.06f;
+            b.colors = colors;
+            rt.gameObject.AddComponent<PressFeedback>();
             if (onClick != null) b.onClick.AddListener(() => onClick());
-            Label(rt, text, 34, Color.white);
+            var label = Label(rt, text, 34, UiTheme.Text);
+            var lrt = (RectTransform)label.transform;
+            lrt.offsetMin = new Vector2(12, 8); lrt.offsetMax = new Vector2(-12, -8);
+            label.resizeTextForBestFit = true; label.resizeTextMinSize = 16; label.resizeTextMaxSize = 34;
             return b;
+        }
+    }
+
+    /// <summary>Keeps a stretched RectTransform inside Screen.safeArea, updating on rotation.</summary>
+    public class SafeAreaFitter : MonoBehaviour
+    {
+        Rect _applied;
+        Vector2Int _screen;
+
+        void OnEnable() => Apply();
+        void Update()
+        {
+            if (Screen.safeArea != _applied || Screen.width != _screen.x || Screen.height != _screen.y) Apply();
+        }
+
+        void Apply()
+        {
+            if (Screen.width <= 0 || Screen.height <= 0) return;
+            var rt = (RectTransform)transform;
+            Rect safe = Screen.safeArea;
+            _applied = safe;
+            _screen = new Vector2Int(Screen.width, Screen.height);
+            rt.anchorMin = new Vector2(safe.xMin / Screen.width, safe.yMin / Screen.height);
+            rt.anchorMax = new Vector2(safe.xMax / Screen.width, safe.yMax / Screen.height);
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+        }
+    }
+
+    /// <summary>Buttons squash a little when pressed, so taps feel like they landed.</summary>
+    public class PressFeedback : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IPointerExitHandler
+    {
+        float _target = 1f;
+        public void OnPointerDown(PointerEventData e) { var s = GetComponent<Selectable>(); if (s == null || s.interactable) _target = 0.94f; }
+        public void OnPointerUp(PointerEventData e) => _target = 1f;
+        public void OnPointerExit(PointerEventData e) => _target = 1f;
+        void OnDisable() { _target = 1f; transform.localScale = Vector3.one; }
+        void Update()
+        {
+            float s = Mathf.Lerp(transform.localScale.x, _target, 1f - Mathf.Exp(-30f * Time.unscaledDeltaTime));
+            transform.localScale = new Vector3(s, s, 1f);
         }
     }
 }

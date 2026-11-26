@@ -1,0 +1,59 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: carnotaurus_Skin
+  m_Shader: {fileID: 4800000, guid: 8ca237bce73454f6b884f87406a8231a, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 1
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _BaseMap:
+        m_Texture: {fileID: 2800000, guid: 333888d7f470f64d1aae66e4c06da658, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _BumpMap:
+        m_Texture: {fileID: 2800000, guid: 90674c0e5ad30a2488f4e820ed587f6d, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _PatternMasks:
+        m_Texture: {fileID: 18700000, guid: 470b81da1895fc353b0bc0c6833b2f94, type: 2}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _ZoneMask:
+        m_Texture: {fileID: 2800000, guid: 3f076741529bf0fddac798b00e762974, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _BumpScale: 1
+    - _DetailAverage: 0.36652687
+    - _DetailContrast: 1
+    - _EyeSmoothness: 0.9
+    - _PatternIndex: 0
+    - _PatternTiling: 4
+    - _Smoothness: 0.15
+    - _TintStrength: 0.85
+    m_Colors:
+    - _AccentTint: {r: 0.94, g: 0.54, b: 0.24, a: 1}
+    - _BaseTint: {r: 0.36, g: 0.73, b: 0.29, a: 1}
+    - _BellyTint: {r: 0.96, g: 0.91, b: 0.79, a: 1}
+    - _EyeTint: {r: 0.94, g: 0.63, b: 0.13, a: 1}
+    - _PatternTint: {r: 0.24, g: 0.49, b: 0.23, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

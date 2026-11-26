@@ -37,6 +37,12 @@ namespace Dino.Survival
 
         float _foodDrain, _waterDrain, _staminaRegen, _runCost, _healthRegen;
         float _staminaLockout; // seconds before stamina regen resumes after emptying
+        bool _exhausted;       // ran until empty: must catch breath before running again
+
+        /// <summary>Fraction of stamina needed to run again after running until empty.</summary>
+        public const float RecoverFraction = 0.25f;
+        /// <summary>True after running until empty, until stamina is back above RecoverFraction.</summary>
+        public bool IsExhausted => _exhausted;
 
         const float StarveDamagePerSecond = 1.5f;
 
@@ -81,10 +87,11 @@ namespace Dino.Survival
             if (IsRunning && !Stamina.IsEmpty)
             {
                 if (!NoDrain) Stamina.Add(-_runCost * dt);
-                if (Stamina.IsEmpty) _staminaLockout = 1.5f;
+                if (Stamina.IsEmpty) { _staminaLockout = 1.5f; _exhausted = true; }
             }
             else if (_staminaLockout > 0f) _staminaLockout -= dt;
             else Stamina.Add(_staminaRegen * dt);
+            if (_exhausted && Stamina.Normalized >= RecoverFraction) _exhausted = false;
 
             if (NoDrain) return;
 
@@ -99,7 +106,7 @@ namespace Dino.Survival
         }
 
         /// <summary>True if there is enough stamina to start running.</summary>
-        public bool CanRun => Stamina.Current > 1f && _staminaLockout <= 0f;
+        public bool CanRun => NoDrain || (!_exhausted && Stamina.Current > 1f);
 
         public bool TryUseStamina(float amount)
         {
@@ -146,6 +153,7 @@ namespace Dino.Survival
             IsFainted = false;
             Health.Set(Health.Max * fill);
             Stamina.Set(Stamina.Max);
+            _exhausted = false; _staminaLockout = 0f;
             Food.Set(Food.Max * Mathf.Max(fill, 0.5f));
             Water.Set(Water.Max * Mathf.Max(fill, 0.5f));
             OnRevived?.Invoke();
