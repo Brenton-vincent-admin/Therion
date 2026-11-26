@@ -1,0 +1,149 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fab2caace9bf26ab6b46d3b05cf3407f, type: 3}
+  m_Name: Species_brachiosaurus
+  m_EditorClassIdentifier: Dino.Runtime::Dino.Species.SpeciesDefinition
+  scientificName: Brachiosaurus
+  temperament: 1
+  stealthy: 0
+  signatureAbility: 6
+  abilityLevelText:
+  - Eats treetop leaves; stomp scares dinos
+  - Wider stomp
+  - Stomp shakes fruit loose
+  unlockXpLevel: 12
+  lengthMeters: 22
+  defaultSkin:
+    baseColor: 8
+    bellyColor: 5
+    pattern: 6
+    patternColor: 9
+    accentColor: 13
+    eyeColor: 16
+  modelSource: 'Quaternius Animated LowPoly Dinosaurs (CC0): Apatosaurus as a stand-in until a Brachiosaurus model exists'
+  id: brachiosaurus
+  displayName: Brachio
+  kidDescription: Giant long-neck that almost nothing can bring down
+  diet: 0
+  moveType: 0
+  size: 4
+  icon: {fileID: 0}
+  modelPrefab: {fileID: 0}
+  adultHeight: 12
+  adultRadius: 3
+  adultModelScale: 1
+  placeholderColor: {r: 0.43529412, g: 0.7647059, b: 0.9411765, a: 1}
+  isStarter: 0
+  unlockXp: 8800
+  sortOrder: 5
+  maxHealth: 400
+  maxStamina: 80
+  maxFood: 100
+  maxWater: 100
+  foodDrainPerMinute: 16.666666
+  waterDrainPerMinute: 16.666666
+  staminaRegenPerSecond: 10
+  runStaminaPerSecond: 10
+  healthRegenPerSecond: 2
+  walkSpeed: 2.4
+  runSpeed: 6
+  swimSpeed: 2.6999998
+  sneakSpeed: 1.2
+  turnSpeed: 150
+  jumpHeight: 0.3
+  foods:
+  - type: 1
+    nutrition: 1
+  - type: 2
+    nutrition: 1
+  biteSize: 25
+  biteInterval: 0.6
+  reach: 4
+  feedHeight: 12
+  attackDamage: 10
+  attackCooldown: 1.6
+  noticeRadius: 25
+  sneakNoticeMultiplier: 0.7
+  growthStages:
+  - name: Hatchling
+    scale: 0.2
+    statMultiplier: 0.25
+    minutesToGrow: 25.2
+    xpOnReach: 0
+  - name: Juvenile
+    scale: 0.45
+    statMultiplier: 0.5
+    minutesToGrow: 44.8
+    xpOnReach: 50
+  - name: Adolescent
+    scale: 0.75
+    statMultiplier: 0.8
+    minutesToGrow: 140
+    xpOnReach: 100
+  - name: Adult
+    scale: 1
+    statMultiplier: 1
+    minutesToGrow: 0
+    xpOnReach: 250
+  abilityIds:
+  - high_reach_stomp
+  variants:
+  - id: swift
+    displayName: Swift
+    unlockXp: 300
+    healthMultiplier: 0.95
+    speedMultiplier: 1.12
+    swimMultiplier: 1
+    staminaMultiplier: 1.1
+    damageMultiplier: 1
+    noticeRadiusMultiplier: 1
+    drainMultiplier: 1
+  - id: aquatic
+    displayName: Aquatic
+    unlockXp: 700
+    healthMultiplier: 1
+    speedMultiplier: 0.95
+    swimMultiplier: 1.25
+    staminaMultiplier: 1
+    damageMultiplier: 1
+    noticeRadiusMultiplier: 1
+    drainMultiplier: 1
+  - id: fierce
+    displayName: Fierce
+    unlockXp: 1200
+    healthMultiplier: 1
+    speedMultiplier: 1
+    swimMultiplier: 1
+    staminaMultiplier: 1
+    damageMultiplier: 1.15
+    noticeRadiusMultiplier: 1
+    drainMultiplier: 1.1
+  - id: sturdy
+    displayName: Sturdy
+    unlockXp: 1800
+    healthMultiplier: 1.15
+    speedMultiplier: 0.95
+    swimMultiplier: 1
+    staminaMultiplier: 1
+    damageMultiplier: 1
+    noticeRadiusMultiplier: 1
+    drainMultiplier: 0.95
+  - id: sneaky
+    displayName: Sneaky
+    unlockXp: 2500
+    healthMultiplier: 0.9
+    speedMultiplier: 1
+    swimMultiplier: 1
+    staminaMultiplier: 1
+    damageMultiplier: 1
+    noticeRadiusMultiplier: 0.6
+    drainMultiplier: 1

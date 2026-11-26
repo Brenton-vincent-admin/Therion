@@ -1,0 +1,151 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fab2caace9bf26ab6b46d3b05cf3407f, type: 3}
+  m_Name: Species_trex
+  m_EditorClassIdentifier: Dino.Runtime::Dino.Species.SpeciesDefinition
+  scientificName: Tyrannosaurus rex
+  temperament: 3
+  stealthy: 0
+  signatureAbility: 13
+  abilityLevelText:
+  - Roar makes small dinos flee
+  - Wider roar
+  - Allies get a speed boost
+  unlockXpLevel: 15
+  lengthMeters: 12
+  defaultSkin:
+    baseColor: 4
+    bellyColor: 5
+    pattern: 1
+    patternColor: 14
+    accentColor: 6
+    eyeColor: 16
+  modelSource: 'Quaternius Animated LowPoly Dinosaurs (CC0): T. rex'
+  id: trex
+  displayName: T. rex
+  kidDescription: Apex hunter, slow to grow and the end goal
+  diet: 2
+  moveType: 0
+  size: 4
+  icon: {fileID: 0}
+  modelPrefab: {fileID: 5248508920953293031, guid: fb3069222056c51baa46e933d7e7ceeb, type: 3}
+  adultHeight: 4.5
+  adultRadius: 2.04
+  adultModelScale: 1
+  placeholderColor: {r: 0.5411765, g: 0.56078434, b: 0.5882353, a: 1}
+  isStarter: 0
+  unlockXp: 13300
+  sortOrder: 13
+  maxHealth: 400
+  maxStamina: 80
+  maxFood: 100
+  maxWater: 100
+  foodDrainPerMinute: 16.666666
+  waterDrainPerMinute: 14.285714
+  staminaRegenPerSecond: 10
+  runStaminaPerSecond: 10
+  healthRegenPerSecond: 2
+  walkSpeed: 3
+  runSpeed: 7.5
+  swimSpeed: 3.375
+  sneakSpeed: 1.5
+  turnSpeed: 150
+  jumpHeight: 0.3
+  foods:
+  - type: 8
+    nutrition: 1
+  - type: 16
+    nutrition: 1
+  - type: 32
+    nutrition: 0.8
+  biteSize: 25
+  biteInterval: 0.6
+  reach: 3
+  feedHeight: 4.0499997
+  attackDamage: 50
+  attackCooldown: 1.6
+  noticeRadius: 25
+  sneakNoticeMultiplier: 0.7
+  growthStages:
+  - name: Hatchling
+    scale: 0.2
+    statMultiplier: 0.25
+    minutesToGrow: 27
+    xpOnReach: 0
+  - name: Juvenile
+    scale: 0.45
+    statMultiplier: 0.5
+    minutesToGrow: 48
+    xpOnReach: 50
+  - name: Adolescent
+    scale: 0.75
+    statMultiplier: 0.8
+    minutesToGrow: 150
+    xpOnReach: 100
+  - name: Adult
+    scale: 1
+    statMultiplier: 1
+    minutesToGrow: 0
+    xpOnReach: 250
+  abilityIds:
+  - roar
+  variants:
+  - id: swift
+    displayName: Swift
+    unlockXp: 300
+    healthMultiplier: 0.95
+    speedMultiplier: 1.12
+    swimMultiplier: 1
+    staminaMultiplier: 1.1
+    damageMultiplier: 1
+    noticeRadiusMultiplier: 1
+    drainMultiplier: 1
+  - id: aquatic
+    displayName: Aquatic
+    unlockXp: 700
+    healthMultiplier: 1
+    speedMultiplier: 0.95
+    swimMultiplier: 1.25
+    staminaMultiplier: 1
+    damageMultiplier: 1
+    noticeRadiusMultiplier: 1
+    drainMultiplier: 1
+  - id: fierce
+    displayName: Fierce
+    unlockXp: 1200
+    healthMultiplier: 1
+    speedMultiplier: 1
+    swimMultiplier: 1
+    staminaMultiplier: 1
+    damageMultiplier: 1.15
+    noticeRadiusMultiplier: 1
+    drainMultiplier: 1.1
+  - id: sturdy
+    displayName: Sturdy
+    unlockXp: 1800
+    healthMultiplier: 1.15
+    speedMultiplier: 0.95
+    swimMultiplier: 1
+    staminaMultiplier: 1
+    damageMultiplier: 1
+    noticeRadiusMultiplier: 1
+    drainMultiplier: 0.95
+  - id: sneaky
+    displayName: Sneaky
+    unlockXp: 2500
+    healthMultiplier: 0.9
+    speedMultiplier: 1
+    swimMultiplier: 1
+    staminaMultiplier: 1
+    damageMultiplier: 1
+    noticeRadiusMultiplier: 0.6
+    drainMultiplier: 1

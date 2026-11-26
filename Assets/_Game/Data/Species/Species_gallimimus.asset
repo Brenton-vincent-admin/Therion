@@ -1,0 +1,157 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fab2caace9bf26ab6b46d3b05cf3407f, type: 3}
+  m_Name: Species_gallimimus
+  m_EditorClassIdentifier: Dino.Runtime::Dino.Species.SpeciesDefinition
+  scientificName: Gallimimus
+  temperament: 0
+  stealthy: 0
+  signatureAbility: 8
+  abilityLevelText:
+  - Short top-speed dash
+  - Longer dash
+  - Dust cloud confuses chasers
+  unlockXpLevel: 3
+  lengthMeters: 6
+  defaultSkin:
+    baseColor: 2
+    bellyColor: 15
+    pattern: 1
+    patternColor: 3
+    accentColor: 12
+    eyeColor: 16
+  modelSource: New model needed. Ostrich-like biped on the Velociraptor rig
+  id: gallimimus
+  displayName: Gallimimus
+  kidDescription: The fastest runner in the game
+  diet: 1
+  moveType: 0
+  size: 2
+  icon: {fileID: 0}
+  modelPrefab: {fileID: 0}
+  adultHeight: 2.2
+  adultRadius: 1.02
+  adultModelScale: 1
+  placeholderColor: {r: 0.8901961, g: 0.7607843, b: 0.47843137, a: 1}
+  isStarter: 0
+  unlockXp: 700
+  sortOrder: 7
+  maxHealth: 100
+  maxStamina: 160
+  maxFood: 100
+  maxWater: 100
+  foodDrainPerMinute: 13.333333
+  waterDrainPerMinute: 14.285714
+  staminaRegenPerSecond: 20
+  runStaminaPerSecond: 10
+  healthRegenPerSecond: 0.5
+  walkSpeed: 4.8
+  runSpeed: 12
+  swimSpeed: 5.3999996
+  sneakSpeed: 2.4
+  turnSpeed: 360
+  jumpHeight: 0.8
+  foods:
+  - type: 1
+    nutrition: 0.9
+  - type: 2
+    nutrition: 0.5
+  - type: 4
+    nutrition: 1
+  - type: 32
+    nutrition: 1
+  - type: 16
+    nutrition: 0.8
+  - type: 8
+    nutrition: 0.7
+  biteSize: 10
+  biteInterval: 0.6
+  reach: 1.5
+  feedHeight: 1.98
+  attackDamage: 5
+  attackCooldown: 1
+  noticeRadius: 25
+  sneakNoticeMultiplier: 0.7
+  growthStages:
+  - name: Hatchling
+    scale: 0.2
+    statMultiplier: 0.25
+    minutesToGrow: 18
+    xpOnReach: 0
+  - name: Juvenile
+    scale: 0.45
+    statMultiplier: 0.5
+    minutesToGrow: 32
+    xpOnReach: 50
+  - name: Adolescent
+    scale: 0.75
+    statMultiplier: 0.8
+    minutesToGrow: 100
+    xpOnReach: 100
+  - name: Adult
+    scale: 1
+    statMultiplier: 1
+    minutesToGrow: 0
+    xpOnReach: 250
+  abilityIds:
+  - sprint_burst
+  variants:
+  - id: swift
+    displayName: Swift
+    unlockXp: 300
+    healthMultiplier: 0.95
+    speedMultiplier: 1.12
+    swimMultiplier: 1
+    staminaMultiplier: 1.1
+    damageMultiplier: 1
+    noticeRadiusMultiplier: 1
+    drainMultiplier: 1
+  - id: aquatic
+    displayName: Aquatic
+    unlockXp: 700
+    healthMultiplier: 1
+    speedMultiplier: 0.95
+    swimMultiplier: 1.25
+    staminaMultiplier: 1
+    damageMultiplier: 1
+    noticeRadiusMultiplier: 1
+    drainMultiplier: 1
+  - id: fierce
+    displayName: Fierce
+    unlockXp: 1200
+    healthMultiplier: 1
+    speedMultiplier: 1
+    swimMultiplier: 1
+    staminaMultiplier: 1
+    damageMultiplier: 1.15
+    noticeRadiusMultiplier: 1
+    drainMultiplier: 1.1
+  - id: sturdy
+    displayName: Sturdy
+    unlockXp: 1800
+    healthMultiplier: 1.15
+    speedMultiplier: 0.95
+    swimMultiplier: 1
+    staminaMultiplier: 1
+    damageMultiplier: 1
+    noticeRadiusMultiplier: 1
+    drainMultiplier: 0.95
+  - id: sneaky
+    displayName: Sneaky
+    unlockXp: 2500
+    healthMultiplier: 0.9
+    speedMultiplier: 1
+    swimMultiplier: 1
+    staminaMultiplier: 1
+    damageMultiplier: 1
+    noticeRadiusMultiplier: 0.6
+    drainMultiplier: 1

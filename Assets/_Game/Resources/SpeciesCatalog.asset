@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 30ccacc5297533fef9614fef40a28f1e, type: 3}
+  m_Name: SpeciesCatalog
+  m_EditorClassIdentifier: Dino.Runtime::Dino.Species.SpeciesCatalog
+  species:
+  - {fileID: 11400000, guid: b1732e1cb19fd34ada897961a8ea9408, type: 2}
+  - {fileID: 11400000, guid: 371c22fd6b8521cba8e8ae518543be56, type: 2}
+  - {fileID: 11400000, guid: 8a04deded10bc6873942a1d7a3c28bd3, type: 2}
+  - {fileID: 11400000, guid: 35c52e98032fc88dab87c92ab85cf94f, type: 2}
+  - {fileID: 11400000, guid: 2e6295ffb6a6ef3b59568cf943a44e20, type: 2}
+  - {fileID: 11400000, guid: b9e54b39714e93d9d8bf8d5204f8980d, type: 2}
+  - {fileID: 11400000, guid: 5aee4302b69375068a99d18354db386f, type: 2}
+  - {fileID: 11400000, guid: 67edb02cdd26f701cbbb0d8dedf73758, type: 2}
+  - {fileID: 11400000, guid: f008dd397167d904e86f164c25c23ae4, type: 2}
+  - {fileID: 11400000, guid: 40fa817ceeb36e9b2a2ccdeae1f0b3a9, type: 2}
+  - {fileID: 11400000, guid: ca975be1bfb74ceef87a8f972d4b764a, type: 2}
+  - {fileID: 11400000, guid: d2747eb346779aa4c93b96a86ed772db, type: 2}
+  - {fileID: 11400000, guid: e54066d7072c062b9b2f56e3e81f219d, type: 2}
+  - {fileID: 11400000, guid: c542e1edf93365409b4b0513dfbe4dc9, type: 2}
