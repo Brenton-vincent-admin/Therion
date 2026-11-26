@@ -23,11 +23,11 @@ MonoBehaviour:
   unlockXpLevel: 12
   lengthMeters: 22
   defaultSkin:
-    baseColor: 8
-    bellyColor: 5
-    pattern: 6
-    patternColor: 9
-    accentColor: 13
+    baseColor: 28
+    bellyColor: 27
+    pattern: 0
+    patternColor: 14
+    accentColor: 4
     eyeColor: 16
   modelSource: 'Quaternius Animated LowPoly Dinosaurs (CC0): Apatosaurus as a stand-in until a Brachiosaurus model exists'
   id: brachiosaurus
@@ -41,7 +41,7 @@ MonoBehaviour:
   adultHeight: 12
   adultRadius: 3
   adultModelScale: 1
-  placeholderColor: {r: 0.43529412, g: 0.7647059, b: 0.9411765, a: 1}
+  placeholderColor: {r: 0.36078432, g: 0.3764706, b: 0.39215687, a: 1}
   isStarter: 0
   unlockXp: 8800
   sortOrder: 5

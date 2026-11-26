@@ -24,10 +24,10 @@ MonoBehaviour:
   lengthMeters: 6
   defaultSkin:
     baseColor: 2
-    bellyColor: 15
-    pattern: 1
-    patternColor: 3
-    accentColor: 12
+    bellyColor: 27
+    pattern: 0
+    patternColor: 25
+    accentColor: 25
     eyeColor: 16
   modelSource: New model needed. Ostrich-like biped on the Velociraptor rig
   id: gallimimus

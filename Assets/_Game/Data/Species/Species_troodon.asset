@@ -25,10 +25,10 @@ MonoBehaviour:
   defaultSkin:
     baseColor: 14
     bellyColor: 4
-    pattern: 8
-    patternColor: 8
-    accentColor: 16
-    eyeColor: 11
+    pattern: 0
+    patternColor: 23
+    accentColor: 25
+    eyeColor: 16
   modelSource: New model needed. Small feathered biped on the Velociraptor rig
   id: troodon
   displayName: Troodon

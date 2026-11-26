@@ -23,11 +23,11 @@ MonoBehaviour:
   unlockXpLevel: 9
   lengthMeters: 8.5
   defaultSkin:
-    baseColor: 3
-    bellyColor: 2
+    baseColor: 28
+    bellyColor: 27
     pattern: 0
-    patternColor: 4
-    accentColor: 6
+    patternColor: 25
+    accentColor: 27
     eyeColor: 16
   modelSource: 'Quaternius Animated LowPoly Dinosaurs (CC0): Triceratops'
   id: triceratops
@@ -41,7 +41,7 @@ MonoBehaviour:
   adultHeight: 3
   adultRadius: 1.445
   adultModelScale: 1
-  placeholderColor: {r: 0.7529412, g: 0.4392157, b: 0.2901961, a: 1}
+  placeholderColor: {r: 0.36078432, g: 0.3764706, b: 0.39215687, a: 1}
   isStarter: 0
   unlockXp: 5200
   sortOrder: 4

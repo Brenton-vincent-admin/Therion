@@ -23,11 +23,11 @@ MonoBehaviour:
   unlockXpLevel: 0
   lengthMeters: 9
   defaultSkin:
-    baseColor: 6
-    bellyColor: 5
-    pattern: 1
-    patternColor: 3
-    accentColor: 7
+    baseColor: 26
+    bellyColor: 27
+    pattern: 0
+    patternColor: 25
+    accentColor: 24
     eyeColor: 16
   modelSource: New model needed (not in the free pack)
   id: parasaur
@@ -41,7 +41,7 @@ MonoBehaviour:
   adultHeight: 4.5
   adultRadius: 1.53
   adultModelScale: 1
-  placeholderColor: {r: 0.9411765, g: 0.5411765, b: 0.23529412, a: 1}
+  placeholderColor: {r: 0.43137255, g: 0.41568628, b: 0.27058825, a: 1}
   isStarter: 1
   unlockXp: 0
   sortOrder: 0

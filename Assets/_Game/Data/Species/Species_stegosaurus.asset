@@ -23,11 +23,11 @@ MonoBehaviour:
   unlockXpLevel: 6
   lengthMeters: 9
   defaultSkin:
-    baseColor: 1
+    baseColor: 26
     bellyColor: 2
-    pattern: 3
-    patternColor: 0
-    accentColor: 6
+    pattern: 0
+    patternColor: 25
+    accentColor: 29
     eyeColor: 16
   modelSource: 'Quaternius Animated LowPoly Dinosaurs (CC0): Stegosaurus'
   id: stegosaurus
@@ -41,7 +41,7 @@ MonoBehaviour:
   adultHeight: 4
   adultRadius: 1.53
   adultModelScale: 1
-  placeholderColor: {r: 0.24313726, g: 0.49019608, b: 0.22745098, a: 1}
+  placeholderColor: {r: 0.43137255, g: 0.41568628, b: 0.27058825, a: 1}
   isStarter: 0
   unlockXp: 2500
   sortOrder: 3

@@ -24,10 +24,10 @@ MonoBehaviour:
   lengthMeters: 4.5
   defaultSkin:
     baseColor: 2
-    bellyColor: 5
-    pattern: 4
-    patternColor: 3
-    accentColor: 7
+    bellyColor: 27
+    pattern: 0
+    patternColor: 25
+    accentColor: 29
     eyeColor: 16
   modelSource: 'New model needed. Biped: can borrow the Velociraptor rig and clips with a dome head'
   id: pachycephalosaurus

@@ -25,9 +25,9 @@ MonoBehaviour:
   defaultSkin:
     baseColor: 1
     bellyColor: 2
-    pattern: 7
-    patternColor: 0
-    accentColor: 11
+    pattern: 0
+    patternColor: 25
+    accentColor: 29
     eyeColor: 16
   modelSource: New model needed. Biped on the T. rex rig with head crests and a frill
   id: dilophosaurus

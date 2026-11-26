@@ -23,11 +23,11 @@ MonoBehaviour:
   unlockXpLevel: 0
   lengthMeters: 1.8
   defaultSkin:
-    baseColor: 10
-    bellyColor: 5
-    pattern: 4
-    patternColor: 8
-    accentColor: 11
+    baseColor: 25
+    bellyColor: 27
+    pattern: 0
+    patternColor: 14
+    accentColor: 24
     eyeColor: 16
   modelSource: New model needed. Feathered biped on the Velociraptor rig
   id: oviraptor
@@ -41,7 +41,7 @@ MonoBehaviour:
   adultHeight: 1
   adultRadius: 0.306
   adultModelScale: 1
-  placeholderColor: {r: 0.5411765, g: 0.35686275, b: 0.8392157, a: 1}
+  placeholderColor: {r: 0.29411766, g: 0.23137255, b: 0.1882353, a: 1}
   isStarter: 1
   unlockXp: 0
   sortOrder: 6

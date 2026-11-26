@@ -23,11 +23,11 @@ MonoBehaviour:
   unlockXpLevel: 4
   lengthMeters: 0.8
   defaultSkin:
-    baseColor: 14
-    bellyColor: 9
-    pattern: 3
-    patternColor: 8
-    accentColor: 9
+    baseColor: 23
+    bellyColor: 14
+    pattern: 0
+    patternColor: 28
+    accentColor: 28
     eyeColor: 16
   modelSource: New model needed. Four-winged glider, needs a glide pose
   id: microraptor
@@ -41,7 +41,7 @@ MonoBehaviour:
   adultHeight: 0.41
   adultRadius: 0.2
   adultModelScale: 1
-  placeholderColor: {r: 0.22745098, g: 0.22745098, b: 0.2509804, a: 1}
+  placeholderColor: {r: 0.11372549, g: 0.09803922, b: 0.09803922, a: 1}
   isStarter: 0
   unlockXp: 1200
   sortOrder: 9

@@ -47,7 +47,7 @@ Material:
     - _EyeSmoothness: 0.9
     - _PatternIndex: 0
     - _PatternTiling: 4
-    - _Smoothness: 0.25
+    - _Smoothness: 0.15
     - _TintStrength: 0.85
     m_Colors:
     - _AccentTint: {r: 0.94, g: 0.54, b: 0.24, a: 1}

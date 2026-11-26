@@ -23,11 +23,11 @@ MonoBehaviour:
   unlockXpLevel: 0
   lengthMeters: 2
   defaultSkin:
-    baseColor: 3
-    bellyColor: 2
-    pattern: 5
-    patternColor: 14
-    accentColor: 6
+    baseColor: 2
+    bellyColor: 27
+    pattern: 0
+    patternColor: 25
+    accentColor: 25
     eyeColor: 16
   modelSource: 'Quaternius Animated LowPoly Dinosaurs (CC0): Velociraptor'
   id: velociraptor
@@ -41,7 +41,7 @@ MonoBehaviour:
   adultHeight: 0.9
   adultRadius: 0.34
   adultModelScale: 1
-  placeholderColor: {r: 0.7529412, g: 0.4392157, b: 0.2901961, a: 1}
+  placeholderColor: {r: 0.8901961, g: 0.7607843, b: 0.47843137, a: 1}
   isStarter: 1
   unlockXp: 0
   sortOrder: 10

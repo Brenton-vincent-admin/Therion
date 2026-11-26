@@ -23,11 +23,11 @@ MonoBehaviour:
   unlockXpLevel: 15
   lengthMeters: 12
   defaultSkin:
-    baseColor: 4
-    bellyColor: 5
-    pattern: 1
+    baseColor: 25
+    bellyColor: 27
+    pattern: 0
     patternColor: 14
-    accentColor: 6
+    accentColor: 14
     eyeColor: 16
   modelSource: 'Quaternius Animated LowPoly Dinosaurs (CC0): T. rex'
   id: trex
@@ -41,7 +41,7 @@ MonoBehaviour:
   adultHeight: 4.5
   adultRadius: 2.04
   adultModelScale: 1
-  placeholderColor: {r: 0.5411765, g: 0.56078434, b: 0.5882353, a: 1}
+  placeholderColor: {r: 0.29411766, g: 0.23137255, b: 0.1882353, a: 1}
   isStarter: 0
   unlockXp: 13300
   sortOrder: 13
