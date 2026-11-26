@@ -57,9 +57,9 @@ namespace Dino.World
                 if (active >= 2) move.z += 1;
             }
 #else
-            move = new Vector3(Input.GetAxis("Horizontal"), 0f, Input.GetAxis("Vertical"));
-            if (Input.GetMouseButton(1)) look = new Vector2(Input.GetAxis("Mouse X"), Input.GetAxis("Mouse Y")) * 10f;
-            fast = Input.GetKey(KeyCode.LeftShift);
+            move = new Vector3(UnityEngine.Input.GetAxis("Horizontal"), 0f, UnityEngine.Input.GetAxis("Vertical"));
+            if (UnityEngine.Input.GetMouseButton(1)) look = new Vector2(UnityEngine.Input.GetAxis("Mouse X"), UnityEngine.Input.GetAxis("Mouse Y")) * 10f;
+            fast = UnityEngine.Input.GetKey(KeyCode.LeftShift);
 #endif
             _yaw += look.x * lookSensitivity;
             _pitch = Mathf.Clamp(_pitch - look.y * lookSensitivity, -85f, 85f);
