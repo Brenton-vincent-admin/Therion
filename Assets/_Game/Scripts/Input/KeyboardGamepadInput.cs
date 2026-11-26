@@ -8,7 +8,7 @@ namespace Dino.Input
     /// <summary>
     /// Keyboard + mouse + gamepad, for testing in the editor now and PC/controller later.
     /// WASD move, mouse (right button held) or right stick look, Shift run, Ctrl/C sneak, Space jump,
-    /// E eat/drink, left click / F attack, Q call. Gamepad: A jump, X action, B attack, Y call, LT sneak, RT run.
+    /// E eat/drink, left click / F attack, Q call, R ability. Gamepad: A jump, X action, B attack, Y call, RB ability, LT sneak, RT run.
     /// </summary>
     public class KeyboardGamepadInput : IDinoInputSource
     {
@@ -34,6 +34,7 @@ namespace Dino.Input
                 s.Action = kb.eKey.isPressed;
                 s.Attack = kb.fKey.wasPressedThisFrame;
                 s.Call = kb.qKey.wasPressedThisFrame;
+                s.Ability = kb.rKey.wasPressedThisFrame;
             }
             var mouse = Mouse.current;
             if (mouse != null)
@@ -53,6 +54,7 @@ namespace Dino.Input
                 s.Action |= pad.buttonWest.isPressed;
                 s.Attack |= pad.buttonEast.wasPressedThisFrame;
                 s.Call |= pad.buttonNorth.wasPressedThisFrame;
+                s.Ability |= pad.rightShoulder.wasPressedThisFrame;
             }
 #else
             s.Move = Vector2.ClampMagnitude(new Vector2(UnityEngine.Input.GetAxisRaw("Horizontal"), UnityEngine.Input.GetAxisRaw("Vertical")), 1f);
@@ -64,6 +66,7 @@ namespace Dino.Input
             s.Action = UnityEngine.Input.GetKey(KeyCode.E);
             s.Attack = UnityEngine.Input.GetKeyDown(KeyCode.F);
             s.Call = UnityEngine.Input.GetKeyDown(KeyCode.Q);
+            s.Ability = UnityEngine.Input.GetKeyDown(KeyCode.R);
 #endif
             return s;
         }

@@ -65,7 +65,8 @@ Species thread: add fields you need (skins etc.) rather than a parallel class; k
 
 ## Player dino (generic, data-driven)
 - `Dino.Player.DinoActor`: root component. `Species`, `StageIndex`, `VariantId`, `Stats` (SurvivalStats), `Motor`, `Growth`. `Setup(species, stage, variantId)`. Builds the model or placeholder.
-- `Dino.Player.DinoMotor`: CharacterController movement. Driven each frame by a `Dino.Input.DinoInputState` (Move, Look, Run, Jump, Action, Attack, Sneak) via `motor.Input = state`. Player input, wild-dino AI and network replicas all drive the same motor.
-- `DinoInteractor` (eat/drink/nest), `DinoGrowth`, `DinoAttack`.
-- `Dino.Session.GameSession`: spawn, faint -> Survival respawn at nest / Hardcore restart, Explorer no drain.
+- `Dino.Player.DinoMotor`: CharacterController movement. Driven each frame by a `Dino.Input.DinoInputState` (Move, Look, Run, Sneak, Jump, Action, Attack, Call, Ability, MoveIsWorldSpace) via `motor.Input = state`. Player input, wild-dino AI and network replicas all drive the same motor.
+- `DinoInteractor` (eat/drink/nest), `DinoGrowth`, `DinoAttack` (player only; wild AI bites in WildDinoBrain), `DinoStatusEffects` (ability hooks the motor reads).
+- `Dino.Session.GameSession`: spawn, faint -> Survival respawn at nest / Hardcore restart, Explorer no drain. `GameSession.Instance`, `Player`, `Mode`, `Save`, `Progression`, event `PlayerSpawned(DinoActor)`. Auto-created in any scene without one (`SessionBootstrap`; add `NoAutoSession` to opt out); builds a test meadow when the scene has no world.
+- `Dino.Progression`: `XpCurve.XpForLevel/LevelForXp`, `ProgressionService.AddXp/IsUnlocked/IsVariantUnlocked`, `XpRewards`.
 - `Dino.Save.SaveSystem`: JSON in persistentDataPath, atomic write, autosave + on app pause.

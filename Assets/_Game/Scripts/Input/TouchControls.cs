@@ -9,7 +9,7 @@ namespace Dino.Input
     /// On-screen phone controls, built in code:
     ///  - left half: floating move stick (touch anywhere, drag). Pushing to the edge for a moment starts running.
     ///  - right half: drag to turn the camera
-    ///  - big round buttons bottom-right: Eat/Drink (hold), Bite, Jump, Sneak (toggle), Run (toggle), Call
+    ///  - big round buttons bottom-right: Eat/Drink (hold), Bite, Jump, Power (species ability), Sneak (toggle), Run (toggle), Roar
     /// Big targets, icons + one-word labels, no menus: designed for a pre-reader.
     /// </summary>
     public class TouchControls : MonoBehaviour, IDinoInputSource
@@ -21,7 +21,7 @@ namespace Dino.Input
         Canvas _canvas;
         StickZone _stick;
         LookZone _look;
-        HoldButton _action, _attack, _jump, _call;
+        HoldButton _action, _attack, _jump, _call, _ability;
         ToggleButton _run, _sneak;
         Text _actionLabel;
         float _edgeTime;
@@ -58,6 +58,7 @@ namespace Dino.Input
             s.Attack = _attack.ConsumePress();
             s.Jump = _jump.ConsumePress();
             s.Call = _call.ConsumePress();
+            s.Ability = _ability.ConsumePress();
             return s;
         }
 
@@ -84,6 +85,7 @@ namespace Dino.Input
             _attack = MakeHold(root, "Bite", "Bite", br, new Vector2(-430, 150), 150, new Color(0.85f, 0.35f, 0.3f, 0.85f), out _);
             _jump = MakeHold(root, "Jump", "Jump", br, new Vector2(-180, 440), 150, new Color(0.3f, 0.55f, 0.9f, 0.85f), out _);
             _call = MakeHold(root, "Call", "Roar", br, new Vector2(-400, 360), 120, new Color(0.7f, 0.5f, 0.9f, 0.85f), out _);
+            _ability = MakeHold(root, "Ability", "Power", br, new Vector2(-620, 230), 140, new Color(0.95f, 0.55f, 0.15f, 0.85f), out _);
             _run = MakeToggle(root, "Run", "Run", new Vector2(0, 0), new Vector2(150, 520), 140, new Color(0.95f, 0.75f, 0.2f, 0.85f));
             _sneak = MakeToggle(root, "Sneak", "Sneak", new Vector2(0, 0), new Vector2(320, 560), 120, new Color(0.4f, 0.4f, 0.45f, 0.85f));
         }
