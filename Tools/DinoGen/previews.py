@@ -81,13 +81,14 @@ def run(spec, out, what=("stills", "lods", "tints", "clips")):
         lods["LOD0"].data.materials[0] = base
     if "clips" in what:
         sc.cycles.samples = 20
-        view = dict(target=(0, 0.6, 2.2), dist=17.5, az=-62, el=7, lens=50)
+        k = spec.get("size", 1.0)
+        view = dict(target=(0, 0.6 * k, 2.2 * k), dist=17.5 * k, az=-62, el=7, lens=50)
         for act in bpy.data.actions:
             if "frames" not in act:
                 continue
             pl.set_action(rig, act.name)
             n = int(act["frames"])
-            step = 1 if n <= 60 else 2
+            step = 1 if n <= 30 else (2 if n <= 75 else 3)
             d = os.path.join(rdir, "clips", act.name)
             os.makedirs(d, exist_ok=True)
             for i, f in enumerate(range(0, n + (0 if act.name in ("Idle", "Walk", "Run", "Rest") else 1), step)):

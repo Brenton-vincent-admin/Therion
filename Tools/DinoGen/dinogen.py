@@ -124,7 +124,7 @@ def loft(name, ctrl, ref=(0, 0, 1), segs=28, per=8, n=2.3, mirror=False):
     return new_object(name, verts, faces)
 
 
-def ellipsoid(name, center, radii, rot=(0, 0, 0), mirror=False):
+def ellipsoid(name, center, radii, rot=(0, 0, 0), mirror=False, box=False):
     c = Vector(center)
     e = Euler([math.radians(a) for a in rot])
     if mirror:
@@ -132,7 +132,10 @@ def ellipsoid(name, center, radii, rot=(0, 0, 0), mirror=False):
         e = Euler((e.x, -e.y, -e.z))
     bm = bmesh.new()
     M = Matrix.Translation(c) @ e.to_matrix().to_4x4() @ Matrix.Diagonal((*radii, 1))
-    bmesh.ops.create_uvsphere(bm, u_segments=20, v_segments=12, radius=1.0, matrix=M)
+    if box:
+        bmesh.ops.create_cube(bm, size=2.0, matrix=M)
+    else:
+        bmesh.ops.create_uvsphere(bm, u_segments=20, v_segments=12, radius=1.0, matrix=M)
     me = bpy.data.meshes.new(name)
     bm.to_mesh(me)
     bm.free()
@@ -175,18 +178,114 @@ def interp_ctrl(ctrl, y):
 # ----------------------------------------------------------------------------
 # stage: mesh
 # ----------------------------------------------------------------------------
+def import_base(spec):
+    """Optional sculpted base body (glb/obj). It is oriented, scaled to real size, stood on the ground,
+    centred and made symmetric, then dressed with the same procedural parts as a lofted body."""
+    B = spec["base"]
+    path = B["file"] if os.path.isabs(B["file"]) else os.path.join(HERE, B["file"])
+    before = set(bpy.data.objects)
+    if path.lower().endswith((".glb", ".gltf")):
+        bpy.ops.import_scene.gltf(filepath=path)
+    else:
+        bpy.ops.wm.obj_import(filepath=path)
+    new = [o for o in bpy.data.objects if o not in before]
+    ob = [o for o in new if o.type == 'MESH'][0]
+    M = ob.matrix_world.copy()
+    ob.parent = None
+    ob.matrix_world = M
+    for o in new:
+        if o != ob:
+            bpy.data.objects.remove(o, do_unlink=True)
+    me = ob.data
+    R = Euler([math.radians(a) for a in B.get("rot", (0, 0, 0))]).to_matrix().to_4x4()
+    me.transform(R @ M)
+    ob.matrix_world = Matrix.Identity(4)
+    co = np.empty(len(me.vertices) * 3, dtype=np.float32)
+    me.vertices.foreach_get("co", co)
+    co = co.reshape(-1, 3).astype(np.float64)
+    if B.get("auto_orient", True):
+        # the body's long axis (PCA in the ground plane) becomes Y; the thick, high end is the head and faces -Y
+        xy = co[:, :2] - co[:, :2].mean(0)
+        w, v = np.linalg.eigh(np.cov(xy.T))
+        axis = v[:, np.argmax(w)]
+        ang = math.atan2(axis[0], axis[1])
+        c_, s_ = math.cos(ang), math.sin(ang)
+        co[:, :2] = xy @ np.array([[c_, s_], [-s_, c_]])
+        y = co[:, 1]
+        span = y.max() - y.min()
+        lo, hi = y.min() + 0.10 * span, y.max() - 0.10 * span
+        a_end, b_end = co[y < lo], co[y > hi]
+        bulk = lambda e: (e[:, 0].max() - e[:, 0].min()) * (e[:, 2].max() - e[:, 2].min())
+        if bulk(b_end) > bulk(a_end):       # head is at +Y: turn around
+            co[:, 0] *= -1
+            co[:, 1] *= -1
+        log("auto orient: yaw", round(math.degrees(ang), 1))
+    s = B["length"] / (co[:, 1].max() - co[:, 1].min())
+    co *= s
+    sx_, sz_ = B.get("scale_xz", (1.0, 1.0))      # optional slimming / lowering to hit the species' real height
+    co[:, 0] *= sx_
+    co[:, 2] *= sz_
+    co[:, 2] -= co[:, 2].min() + B.get("sink", 0.0)
+    co[:, 1] -= co[:, 1].min() + B["snout_to_hip"]          # snout tip at y = -snout_to_hip, hips near y = 0
+    # straighten the spine sideways: generated bodies are often slightly bent or turned, which would put the
+    # head and tail off the mirror plane. Find the midline of the upper body in slices along Y and remove it.
+    nb = 72
+    edges = np.linspace(co[:, 1].min(), co[:, 1].max(), nb + 1)
+    which = np.clip(np.digitize(co[:, 1], edges) - 1, 0, nb - 1)
+    mids = np.zeros(nb)
+    for b in range(nb):
+        sl = co[which == b]
+        if len(sl) < 8:
+            mids[b] = np.nan
+            continue
+        up = sl[sl[:, 2] > sl[:, 2].min() + 0.5 * (sl[:, 2].max() - sl[:, 2].min())]
+        mids[b] = 0.5 * (up[:, 0].min() + up[:, 0].max())
+    ok = ~np.isnan(mids)
+    centres = 0.5 * (edges[:-1] + edges[1:])
+    mids = np.interp(centres, centres[ok], mids[ok])
+    mids = np.convolve(np.pad(mids, 3, mode='edge'), np.ones(7) / 7, mode='valid')
+    co[:, 0] -= np.interp(co[:, 1], centres, mids) + B.get("x_shift", 0.0)
+    log("midline offset range", round(float(mids.min()), 3), round(float(mids.max()), 3))
+    me.vertices.foreach_set("co", co.astype(np.float32).ravel())
+    me.update()
+    if B.get("symmetrize", "+") in ("+", "-"):
+        keep_pos = B.get("symmetrize", "+") == "+"
+        bm = bmesh.new()
+        bm.from_mesh(me)
+        bmesh.ops.bisect_plane(bm, geom=bm.verts[:] + bm.edges[:] + bm.faces[:], plane_co=(0, 0, 0),
+                               plane_no=(1, 0, 0), clear_inner=keep_pos, clear_outer=not keep_pos)
+        bm.to_mesh(me)
+        bm.free()
+        m = ob.modifiers.new("Mirror", 'MIRROR')
+        m.use_axis = (True, False, False)
+        m.use_clip = True
+        m.merge_threshold = 0.002
+        apply_modifier(ob, m)
+    ob.name = "Base"
+    log("base mesh:", len(me.polygons), "faces, scale", round(float(s), 3))
+    return ob
+
+
 def build_high(spec):
     parts = []
-    for p in spec["lofts"]:
+    if "base" in spec:
+        parts.append(import_base(spec))
+    based = "base" in spec        # with a sculpted base, lofts are only guides unless marked with_base
+    for p in spec.get("lofts", []):
+        if based and not p.get("with_base"):
+            continue
         kw = dict(ref=p.get("ref", (0, 0, 1)), n=p.get("n", 2.3), segs=p.get("segs", 28))
         parts.append(loft(p["name"], p["ctrl"], **kw))
         if p.get("mirror"):
             parts.append(loft(p["name"] + "_R", p["ctrl"], mirror=True, **kw))
     for e in spec.get("ellipsoids", []):
+        if based and not e.get("with_base"):
+            continue
         parts.append(ellipsoid(e["name"], e["c"], e["r"], e.get("rot", (0, 0, 0))))
         if e.get("mirror", True) and abs(e["c"][0]) > 1e-6:
             parts.append(ellipsoid(e["name"] + "_R", e["c"], e["r"], e.get("rot", (0, 0, 0)), mirror=True))
-    high = join(parts, "High")
+    high = join(parts, "High") if len(parts) > 1 else parts[0]
+    high.name = "High"
     vox = spec.get("voxel", 0.02)
     m = high.modifiers.new("Remesh", 'REMESH')
     m.mode = 'VOXEL'
@@ -198,12 +297,57 @@ def build_high(spec):
     m.factor = 0.5
     m.iterations = spec.get("smooth_iters", 12)
     apply_modifier(high, m)
+    extra = []
+    O = spec.get("osteoderms")
+    if O:
+        bpy.context.view_layer.update()
+        ctrl = [p["ctrl"] for p in spec["lofts"] if p["name"] == O["ctrl"]][0]
+        bm = bmesh.new()
+        n = 0
+        for ri, row in enumerate(O["rows"]):
+            ang = math.radians(row["angle"])
+            y = O["y"][0] + (ri % 2) * O["spacing"] * 0.5
+            i = 0
+            while y < O["y"][1]:
+                c = interp_ctrl(ctrl, y)
+                taper = min(1.0, max(0.25, c[4] / 0.45))
+                jit = ((i * 7919 + ri * 104729) % 100) / 100.0
+                for sx in ((1, -1) if row["angle"] > 0 else (1,)):
+                    dirv = Vector((sx * math.sin(ang), 0, math.cos(ang)))
+                    origin = Vector((0, y + (jit - 0.5) * O["spacing"] * 0.4, c[2])) + dirv * 3.0
+                    ok, loc, nrm, _ = high.ray_cast(origin, -dirv, distance=3.0)
+                    if not ok:
+                        continue
+                    r = row["r"] * taper * (0.8 + 0.4 * jit)
+                    h = row["h"] * taper * (0.8 + 0.4 * jit)
+                    cone(bm, loc - nrm * r * 0.4, nrm, h + r * 0.4, r, sides=8)
+                    n += 1
+                y += O["spacing"] * (0.85 + 0.3 * jit)
+                i += 1
+        me = bpy.data.meshes.new("Osteoderms")
+        bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+        # close the cone bases so the voxel remesh treats them as solids
+        bmesh.ops.holes_fill(bm, edges=[e for e in bm.edges if e.is_boundary])
+        bm.to_mesh(me)
+        bm.free()
+        ob = bpy.data.objects.new("Osteoderms", me)
+        bpy.context.scene.collection.objects.link(ob)
+        extra.append(ob)
+        log("osteoderms:", n)
     cuts = []
     for e in spec.get("cuts", []):
-        cuts.append(ellipsoid(e["name"], e["c"], e["r"], e.get("rot", (0, 0, 0))))
-        cuts.append(ellipsoid(e["name"] + "_R", e["c"], e["r"], e.get("rot", (0, 0, 0)), mirror=True))
+        cuts.append(ellipsoid(e["name"], e["c"], e["r"], e.get("rot", (0, 0, 0)), box=e.get("box", False)))
+        if abs(e["c"][0]) > 1e-6:
+            cuts.append(ellipsoid(e["name"] + "_R", e["c"], e["r"], e.get("rot", (0, 0, 0)), mirror=True))
+    if extra:
+        high = join([high] + extra, "High")
     if cuts:
         cutter = join(cuts, "Cutter")
+        if extra:       # fuse the added bumps first so the boolean sees one clean solid
+            m = high.modifiers.new("Remesh", 'REMESH')
+            m.mode = 'VOXEL'
+            m.voxel_size = vox
+            apply_modifier(high, m)
         m = high.modifiers.new("Cut", 'BOOLEAN')
         m.operation = 'DIFFERENCE'
         m.object = cutter
@@ -213,6 +357,7 @@ def build_high(spec):
             pass
         apply_modifier(high, m)
         bpy.data.objects.remove(cutter, do_unlink=True)
+    if cuts or extra:
         m = high.modifiers.new("Remesh", 'REMESH')
         m.mode = 'VOXEL'
         m.voxel_size = vox
@@ -220,7 +365,7 @@ def build_high(spec):
         apply_modifier(high, m)
         m = high.modifiers.new("Smooth", 'SMOOTH')
         m.factor = 0.5
-        m.iterations = 3
+        m.iterations = spec.get("final_smooth", 3)
         apply_modifier(high, m)
     for poly in high.data.polygons:
         poly.use_smooth = True
@@ -315,7 +460,7 @@ def build_accessories(spec, high=None):
         ex = E["c"][0] * sx
         hit = cast((sx * 3.0, E["c"][1], E["c"][2]), (-sx, 0, 0), 4.0)
         if hit:
-            ex = hit.x - sx * E["r"] * 0.35
+            ex = hit.x - sx * E["r"] * E.get("inset", 0.15)
         M = Matrix.Translation((ex, E["c"][1], E["c"][2])) @ rot
         bmesh.ops.create_uvsphere(bm, u_segments=10, v_segments=6, radius=E["r"], matrix=M)
         bm.verts.ensure_lookup_table()
@@ -385,9 +530,10 @@ def setup_stage(length=13.0):
     so = bpy.data.objects.new("Sun", sun)
     sc.collection.objects.link(so)
     so.rotation_euler = (math.radians(52), 0, math.radians(-40))
-    bpy.ops.mesh.primitive_plane_add(size=400, location=(0, 0, 0))
-    g = bpy.context.active_object
-    g.name = "Ground"
+    gm = bpy.data.meshes.new("Ground")
+    gm.from_pydata([(-200, -200, 0), (200, -200, 0), (200, 200, 0), (-200, 200, 0)], [], [(0, 1, 2, 3)])
+    g = bpy.data.objects.new("Ground", gm)
+    sc.collection.objects.link(g)
     mat = bpy.data.materials.new("GroundMat")
     mat.use_nodes = True
     b = mat.node_tree.nodes["Principled BSDF"]
@@ -430,6 +576,7 @@ def render_view(path, target, dist, az, el, lens=50, res=(1280, 800)):
 # ----------------------------------------------------------------------------
 def skin_material(spec):
     S = spec["skin"]
+    K = spec.get("size", 1.0)          # body size relative to the T. rex the shader was tuned on
     mat = bpy.data.materials.new("SkinProcedural")
     mat.use_nodes = True
     nt = mat.node_tree
@@ -486,7 +633,7 @@ def skin_material(spec):
     def noise(scale, detail=4.0, rough=0.55, dist=0.0):
         n = node("ShaderNodeTexNoise")
         L.new(geo.outputs["Position"], n.inputs["Vector"])
-        n.inputs["Scale"].default_value = scale
+        n.inputs["Scale"].default_value = scale / K
         n.inputs["Detail"].default_value = detail
         n.inputs["Roughness"].default_value = rough
         n.inputs["Distortion"].default_value = dist
@@ -502,9 +649,9 @@ def skin_material(spec):
     # slightly warped coordinates so scale rows are not perfectly regular
     warp = node("ShaderNodeTexNoise")
     L.new(geo.outputs["Position"], warp.inputs["Vector"])
-    warp.inputs["Scale"].default_value = 1.3
+    warp.inputs["Scale"].default_value = 1.3 / K
     wmix = node("ShaderNodeMix", data_type='VECTOR')
-    wmix.inputs[0].default_value = 0.035
+    wmix.inputs[0].default_value = 0.035 * K
     L.new(geo.outputs["Position"], wmix.inputs[4])
     L.new(warp.outputs["Color"], wmix.inputs[5])
     wpos = wmix.outputs[1]
@@ -514,7 +661,7 @@ def skin_material(spec):
     belly = maprange(nz, -0.25, -0.8)                     # 1 underneath
     low = maprange(pz, S["belly_height"][0], S["belly_height"][1], 1.0, 0.0)
     belly = math_('MULTIPLY', belly, low)
-    ridge = math_('MULTIPLY', maprange(math_('ABSOLUTE', px), 0.06, 0.22, 1.0, 0.0), maprange(nz, 0.55, 0.85))
+    ridge = math_('MULTIPLY', maprange(math_('ABSOLUTE', px), 0.06 * K, 0.22 * K, 1.0, 0.0), maprange(nz, 0.55, 0.85))
     # stripes: bands across the body, broken up by noise, only on back/flanks
     band = math_('SINE', math_('ADD', math_('MULTIPLY', py, S["stripe_freq"]),
                                math_('MULTIPLY', noise(0.9, 3.0), 9.0)))
@@ -527,7 +674,7 @@ def skin_material(spec):
     # --- scales and creases (drive both value and bump) ----------------------
     sc_small = voronoi(S["scale_small"], vec=wpos)
     sc_big = voronoi(S["scale_big"], vec=wpos)
-    feet = maprange(pz, 0.35, 0.9, 1.0, 0.0)
+    feet = maprange(pz, 0.35 * K, 0.9 * K, 1.0, 0.0)
     big_mask = math_('MAXIMUM', math_('MAXIMUM', ridge, feet), maprange(noise(0.8, 2.0), 0.58, 0.72))
     edge_small = maprange(sc_small, 0.0, 0.22)
     edge_big = maprange(sc_big, 0.0, 0.14)
@@ -539,14 +686,14 @@ def skin_material(spec):
         L.new(wpos, mp.inputs["Vector"])
         n = node("ShaderNodeTexNoise")
         L.new(mp.outputs[0], n.inputs["Vector"])
-        n.inputs["Scale"].default_value = scale
+        n.inputs["Scale"].default_value = scale / K
         n.inputs["Detail"].default_value = 3.0
         n.inputs["Roughness"].default_value = 0.6
         n.inputs["Distortion"].default_value = 0.6
         d = math_('ABSOLUTE', math_('SUBTRACT', n.outputs[0], 0.5))
         return maprange(d, 0.0, 0.05, 1.0, 0.0)           # 1 inside a fold line
 
-    limb = maprange(pz, 1.7, 2.1, 1.0, 0.0)               # legs: rings; body: vertical folds
+    limb = maprange(pz, 1.7 * K, 2.1 * K, 1.0, 0.0)               # legs: rings; body: vertical folds
     fold = mixc(limb, crease(0.5, 3.2, 0.35, 2.2), crease(0.6, 0.6, 3.0, 2.6))
     fold = math_('MULTIPLY', fold, maprange(noise(0.9, 2.0), 0.48, 0.68))
     broad = noise(2.2, 3.0, 0.5)
@@ -581,6 +728,18 @@ def skin_material(spec):
         d.inputs[1].default_value = (E["c"][0] * sx, E["c"][1], E["c"][2])
         rings.append(maprange(d.outputs["Value"], E["r"] * 1.6, E["r"] * 2.6, 1.0, 0.0))
     accent = math_('MAXIMUM', ridge, math_('MAXIMUM', rings[0], rings[1]))
+    horn = None
+    for (pt, rad) in S.get("accent_points", []):
+        for sx in (1, -1):
+            dn = node("ShaderNodeVectorMath", operation='DISTANCE')
+            L.new(geo.outputs["Position"], dn.inputs[0])
+            dn.inputs[1].default_value = (pt[0] * sx, pt[1], pt[2])
+            m_ = maprange(dn.outputs["Value"], rad * 0.75, rad, 1.0, 0.0)
+            horn = m_ if horn is None else math_('MAXIMUM', horn, m_)
+    if horn is not None:
+        accent = math_('MAXIMUM', accent, horn)
+        col2 = mixc(horn, col, S.get("accent_color", (0.04, 0.035, 0.03)))
+        L.new(col2, bsdf.inputs["Base Color"])
     comb = node("ShaderNodeCombineColor")
     L.new(belly, comb.inputs[0])
     L.new(accent, comb.inputs[1])

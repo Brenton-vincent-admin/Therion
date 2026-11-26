@@ -12,7 +12,7 @@ import dinogen as dg
 
 log = dg.log
 PATCH = {"teeth": 0.1, "claws": 0.3, "iris": 0.5, "pupil": 0.7, "gum": 0.9}   # v of flat colour patches at u=0.975
-PATCH_RGB = {"teeth": (0.80, 0.74, 0.58), "claws": (0.10, 0.09, 0.08), "iris": (0.62, 0.40, 0.10),
+PATCH_RGB = {"teeth": (0.80, 0.74, 0.58), "claws": (0.10, 0.09, 0.08), "iris": (0.85, 0.55, 0.12),
              "pupil": (0.01, 0.01, 0.01), "gum": (0.35, 0.12, 0.10)}
 UV_SCALE = 0.94
 
@@ -84,10 +84,17 @@ def stage_bake(spec, out):
     co = np.empty(len(low.data.vertices) * 3, dtype=np.float32)
     low.data.vertices.foreach_get("co", co)
     co = co.reshape(-1, 3)
-    head_y = spec["head_bone"][0][1] + 0.3
+    K = spec.get("size", 1.0)
+    head_y = spec["head_bone"][0][1] + 0.3 * K
     w = np.ones(len(co), dtype=np.float32)
-    detail = (co[:, 1] < head_y) | (co[:, 2] < 0.95) | ((co[:, 2] < 2.25) & (co[:, 1] < -2.35) & (np.abs(co[:, 0]) > 0.45))
+    wrist = np.array(spec["joints"]["wrist"])
+    hand = np.linalg.norm(np.abs(co) * (1, 0, 0) + co * (0, 1, 1) - wrist, axis=1) < 0.45 * K
+    detail = (co[:, 1] < head_y) | (co[:, 2] < 0.95 * K) | hand
+    fine = np.zeros(len(co), dtype=bool)        # horns and other accent shapes keep the most triangles
+    for (pt, rad) in spec["skin"].get("accent_points", []):
+        fine |= np.linalg.norm(np.abs(co) * (1, 0, 0) + co * (0, 1, 1) - np.array(pt), axis=1) < rad * 1.6
     w[detail] = 0.25
+    w[fine] = 0.08
     for i, x in enumerate(w):
         vg.add([i], float(x), 'REPLACE')
     decimate_to(low, spec["tris"]["LOD0"] - acc_tris, "Coarse")
@@ -134,7 +141,7 @@ def stage_bake(spec, out):
     high.select_set(True)
     low.select_set(True)
     bpy.context.view_layer.objects.active = low
-    kw = dict(use_selected_to_active=True, cage_extrusion=0.06, max_ray_distance=0.2, margin=12)
+    kw = dict(use_selected_to_active=True, cage_extrusion=0.06 * K, max_ray_distance=0.2 * K, margin=12)
 
     def bake(name, **extra):
         tex.image = imgs[name]
@@ -220,7 +227,7 @@ def stage_bake(spec, out):
             elif o.name.startswith("Claws"):
                 key = "claws"
             else:
-                key = "pupil" if p.normal.dot(look) > 0.86 else "iris"
+                key = "pupil" if p.normal.dot(look) > 0.93 else "iris"
             for li in p.loop_indices:
                 uvl.data[li].uv = (0.975, PATCH[key])
     bpy.data.objects.remove(high, do_unlink=True)
@@ -396,6 +403,8 @@ def rot_x(v, deg):
 class Animator:
     def __init__(self, rig, spec):
         self.rig, self.spec = rig, spec
+        self.k = spec.get("size", 1.0)      # clip distances are written for the T. rex and scaled by this
+        self.ks = self.k
         J = spec["joints"]
         self.J = {k: Vector(v) for k, v in J.items()}
         self.targets = {}
@@ -415,7 +424,7 @@ class Animator:
             t = {"ankle": self.empty("IK_Ankle." + side, f(J["ankle"])),
                  "ball": self.empty("IK_Ball." + side, f(J["ball"])),
                  "tip": self.empty("IK_Tip." + side, f(J["toe"])),
-                 "pole": self.empty("IK_Pole." + side, f(J["knee"]) + Vector((sx * 0.25, -4.0, 0.6)))}
+                 "pole": self.empty("IK_Pole." + side, f(J["knee"]) + Vector((sx * 0.25, -4.0, 0.6)) * self.k)}
             self.targets[side] = t
             pb = rig.pose.bones["Shin." + side]
             c = pb.constraints.new('IK')
@@ -444,7 +453,7 @@ class Animator:
         sx = 1 if side == "L" else -1
         J = self.J
         f = lambda p: Vector((p.x * sx, p.y, p.z))
-        b = f(J["ball"]) + (Vector(ball) if ball else Vector())
+        b = f(J["ball"]) + (Vector(ball) * self.ks if ball else Vector())
         a = b + rot_x(f(J["ankle"]) - f(J["ball"]), heel)
         t = b + rot_x(f(J["toe"]) - f(J["ball"]), toe)
         if xf is not None:
@@ -454,6 +463,7 @@ class Animator:
 
     def apply(self, frame, pose, key=True):
         rig = self.rig
+        self.ks = 1.0 if pose.get("real") else self.k
         rots = pose.get("rot", {})
         for pb in rig.pose.bones:
             pb.rotation_mode = 'QUATERNION'
@@ -470,7 +480,7 @@ class Animator:
             pb.rotation_quaternion = q
             pb.location = (0, 0, 0)
         hips = rig.pose.bones["Hips"]
-        hips.location = self.rest["Hips"].inverted() @ Vector(pose.get("hips", (0, 0, 0)))
+        hips.location = self.rest["Hips"].inverted() @ (Vector(pose.get("hips", (0, 0, 0))) * self.ks)
         for side in ("L", "R"):
             self.foot(side, **pose.get("foot" + side, {}))
         if not key:
@@ -540,48 +550,83 @@ def neck_set(rot, pitch=0.0, yaw=0.0, n=3):
         rot[f"Neck{i}"] = (pitch, 0, yaw)
 
 
+def gait_pose(A, name, t):
+    """Walk / run cycle pose at phase t. Lengths here are real metres (pose['real'])."""
+    g = A.spec["gaits"][name]
+    k = A.k
+    run = name == "Run"
+    duty, S = g["duty"], g["speed"] * g["seconds"] * g["duty"]
+    lead = g.get("lead", 0.05 * k)
+    pose = {"rot": {}, "real": True}
+    for side, off in (("L", 0.0), ("R", 0.5)):
+        p = (t + off) % 1.0
+        if p < duty:
+            u = p / duty
+            y = -S / 2 + S * u
+            heel = -8 * (1 - smooth(u / 0.18)) + (34 if run else 28) * smooth((u - 0.55) / 0.45)
+            pose["foot" + side] = dict(ball=(0, y + lead, 0), heel=heel, toe=0)
+        else:
+            w = (p - duty) / (1 - duty)
+            e = w * w * w * (w * (6 * w - 15) + 10)
+            y = S / 2 - S * e
+            z = g["lift"] * math.sin(math.pi * w) ** 0.9 + 0.04 * k * math.sin(math.pi * w)
+            heel = (1 - w) * (34 if run else 28) + w * -8 + (30 if run else 20) * math.sin(math.pi * w)
+            toe = 42 * math.sin(math.pi * w) * (1 - w) * 1.6
+            pose["foot" + side] = dict(ball=(0, y + lead, z), heel=heel, toe=toe)
+    ph = 2 * math.pi * (t - duty / 2)
+    bob = g["bob"]
+    crouch = (0.22 if run else 0.07) * k
+    dz = -crouch + (bob * math.cos(2 * ph) if not run else -bob * math.cos(2 * ph)) - bob
+    pose["hips"] = (0.06 * k * math.cos(ph), 0.0, dz)
+    yaw = -(7 if run else 5) * math.cos(2 * math.pi * t)
+    roll = -(3.5 if run else 2.5) * math.cos(ph)
+    lean = 7.0 if run else 1.0
+    pose["rot"]["Hips"] = (lean, roll, yaw)
+    spine_set(pose["rot"], pitch=-lean * 0.12, yaw=-yaw * 0.27, roll=-roll * 0.27)
+    nod = (2.5 if run else 1.5) * math.cos(2 * ph + 0.6)
+    neck_set(pose["rot"], pitch=-lean * 0.16 + nod * 0.4, yaw=-yaw * 0.06)
+    pose["rot"]["Head"] = (-lean * 0.12 - nod, 0, 0)
+    tail_wave(pose["rot"], A.spec["tail"]["bones"], t + 0.25, amp=(4.0 if run else 3.0), pitch=lean * 0.1,
+              base=(0, 0, -yaw * 0.12))
+    sw = (9 if run else 5) * math.sin(2 * math.pi * t)
+    pose["rot"]["UpperArm.L"] = (sw, 0, 0)
+    pose["rot"]["UpperArm.R"] = (-sw, 0, 0)
+    pose["rot"]["Jaw"] = (4.0 if run else 0.0, 0, 0)
+    return pose
+
+
 def gait(name):
     def fn(A, f, t):
-        g = A.spec["gaits"][name]
-        run = name == "Run"
-        duty, S = g["duty"], g["speed"] * g["seconds"] * g["duty"]
-        pose = {"rot": {}}
-        for side, off in (("L", 0.0), ("R", 0.5)):
-            p = (t + off) % 1.0
-            if p < duty:
-                u = p / duty
-                y = -S / 2 + S * u
-                heel = -8 * (1 - smooth(u / 0.18)) + (34 if run else 28) * smooth((u - 0.55) / 0.45)
-                pose["foot" + side] = dict(ball=(0, y + g.get("lead", 0.05), 0), heel=heel, toe=0)
-            else:
-                w = (p - duty) / (1 - duty)
-                e = w * w * w * (w * (6 * w - 15) + 10)
-                y = S / 2 - S * e
-                z = g["lift"] * math.sin(math.pi * w) ** 0.9 + 0.04 * math.sin(math.pi * w)
-                heel = (1 - w) * (34 if run else 28) + w * -8 + (30 if run else 20) * math.sin(math.pi * w)
-                toe = 42 * math.sin(math.pi * w) * (1 - w) * 1.6
-                pose["foot" + side] = dict(ball=(0, y + g.get("lead", 0.05), z), heel=heel, toe=toe)
-        ph = 2 * math.pi * (t - duty / 2)
-        bob = g["bob"]
-        crouch = 0.22 if run else 0.07
-        dz = -crouch + (bob * math.cos(2 * ph) if not run else -bob * math.cos(2 * ph)) - bob
-        pose["hips"] = (0.06 * math.cos(ph), 0.0, dz)
-        yaw = -(7 if run else 5) * math.cos(2 * math.pi * t)
-        roll = -(3.5 if run else 2.5) * math.cos(ph)
-        lean = 7.0 if run else 1.0
-        pose["rot"]["Hips"] = (lean, roll, yaw)
-        spine_set(pose["rot"], pitch=-lean * 0.12, yaw=-yaw * 0.27, roll=-roll * 0.27)
-        nod = (2.5 if run else 1.5) * math.cos(2 * ph + 0.6)
-        neck_set(pose["rot"], pitch=-lean * 0.16 + nod * 0.4, yaw=-yaw * 0.06)
-        pose["rot"]["Head"] = (-lean * 0.12 - nod, 0, 0)
-        tail_wave(pose["rot"], A.spec["tail"]["bones"], t + 0.25, amp=(4.0 if run else 3.0), pitch=lean * 0.1,
-                  base=(0, 0, -yaw * 0.12))
-        sw = (9 if run else 5) * math.sin(2 * math.pi * t)
-        pose["rot"]["UpperArm.L"] = (sw, 0, 0)
-        pose["rot"]["UpperArm.R"] = (-sw, 0, 0)
-        pose["rot"]["Jaw"] = (4.0 if run else 0.0, 0, 0)
-        A.apply(f, pose)
+        A.apply(f, gait_pose(A, name, t))
     return fn
+
+
+def bull_rush(A, f, t):
+    """Ability for horned hunters: drop the head, sprint two strides, then toss the horns up into the target."""
+    g = A.spec["gaits"]["Run"]
+    strides = 2.0
+    w = smooth(t / 0.18) * (1 - smooth((t - 0.86) / 0.14))          # how much we are in the charge
+    pose = gait_pose(A, "Run", (t * strides * 1.0) % 1.0)
+    for key, val in list(pose["rot"].items()):
+        pose["rot"][key] = tuple(v * w for v in val)
+    for side in ("L", "R"):
+        fpose = pose["foot" + side]
+        fpose["ball"] = tuple(v * w for v in fpose["ball"])
+        fpose["heel"] *= w
+        fpose["toe"] *= w
+    pose["hips"] = tuple(v * w for v in pose["hips"])
+    down = smooth(t / 0.2) * (1 - smooth((t - 0.70) / 0.06))       # head lowered, horns forward
+    toss = smooth((t - 0.70) / 0.07) * (1 - smooth((t - 0.84) / 0.16))   # upward ram
+    hx, hy, hz = pose["hips"]
+    pose["hips"] = (hx, hy - 0.35 * A.k * toss, hz - 0.10 * A.k * down)
+    r = pose["rot"]
+    r["Hips"] = (r["Hips"][0] + 4 * down - 5 * toss, r["Hips"][1], r["Hips"][2])
+    for i in (1, 2, 3):
+        n = r[f"Neck{i}"]
+        r[f"Neck{i}"] = (n[0] + 11 * down - 9 * toss, n[1], n[2])
+    r["Head"] = (r["Head"][0] + 20 * down - 22 * toss, 0, 0)
+    r["Jaw"] = (2 + 10 * toss, 0, 0)
+    A.apply(f, pose)
 
 
 def idle(A, f, t):
@@ -634,7 +679,16 @@ def ability(A, f, t):   # roar
     A.apply(f, pose)
 
 
-def calibrate_reach(A, target_z=0.22):
+def body_numbers(A):
+    """Real-size numbers the lying-down clips need, read from the body rings."""
+    body = np.array([q["ctrl"] for q in A.spec["lofts"] if q["name"] == "Body"][0], float)
+    belly = float((body[:, 2] - body[:, 4]).min())
+    hip = dg.interp_ctrl(body, 0.0)
+    return {"rest_drop": (belly - 0.04 * A.k) / A.k, "faint_drop": (hip[2] - 1.05 * hip[3]) / A.k}
+
+
+def calibrate_reach(A, target_z=None):
+    target_z = 0.22 * A.k if target_z is None else target_z
     """Find how far the body must tip so the chin just reaches the ground (works for any species)."""
     base = {"hips": 20, "spine": 4.5, "neck": 9.5, "head": 2, "drop": 0.5}
     lo, hi = 0.2, 2.0
@@ -684,8 +738,8 @@ def drink(A, f, t):
 
 def rest(A, f, t):      # lying down, breathing (loop)
     s = lambda k=1, ph=0.0: math.sin(2 * math.pi * (k * t + ph))
-    R = A.spec.get("rest", {"drop": 1.80})
-    pose = {"rot": {}, "hips": (0, 0.25, -R["drop"] + 0.02 * s(2))}
+    drop = A.spec.get("rest", {}).get("drop", A.numbers["rest_drop"])
+    pose = {"rot": {}, "hips": (0, 0.25, -drop + 0.02 * s(2))}
     pose["rot"]["Hips"] = (-3.0, 0, 0)
     spine_set(pose["rot"], pitch=1.5 + 0.5 * s(2, 0.05))
     neck_set(pose["rot"], pitch=5.0 + 0.4 * s(2, 0.1), yaw=1.5 * s(1))
@@ -713,7 +767,8 @@ def hurt(A, f, t):
 
 
 def faint(A, f, t):     # stagger, sink, flop onto the side (ends lying still)
-    F = A.spec.get("faint", {"drop": 2.25, "roll": -78})
+    F = {"drop": A.numbers["faint_drop"], "roll": -78}
+    F.update(A.spec.get("faint", {}))
     sink = curve(t, [(0, 0), (0.15, 0.05), (0.55, 0.75), (0.75, 1.0), (1, 1.0)])
     roll = curve(t, [(0, 0), (0.2, 0.06), (0.45, 0.2), (0.75, 1.0), (0.82, 0.96), (1, 1.0)])
     sway = math.sin(2 * math.pi * 2.0 * t) * (1 - smooth(t / 0.5))
@@ -732,7 +787,7 @@ def faint(A, f, t):     # stagger, sink, flop onto the side (ends lying still)
     hz = A.rig.data.bones["Hips"].head_local.z
     pivot = Vector((0, 0, hz))
     w = smooth((roll - 0.15) / 0.5)
-    xf = (Matrix.Translation(Vector(pose["hips"]) * w) @ Matrix.Translation(pivot)
+    xf = (Matrix.Translation(Vector(pose["hips"]) * w * A.k) @ Matrix.Translation(pivot)
           @ Matrix.Rotation(math.radians(ang * w), 4, 'Y') @ Matrix.Translation(-pivot))
     for side in ("L", "R"):
         pose["foot" + side] = dict(ball=(0, 0.25 * w, 0), heel=-10 * w, toe=18 * w, xf=xf)
@@ -741,8 +796,8 @@ def faint(A, f, t):     # stagger, sink, flop onto the side (ends lying still)
     # keep feet from sinking below ground
     for T in A.targets.values():
         for e in T.values():
-            if e.location.z < 0.1:
-                e.location.z = 0.1
+            if e.location.z < 0.1 * A.k:
+                e.location.z = 0.1 * A.k
                 e.keyframe_insert("location", frame=f)
 
 
@@ -752,6 +807,7 @@ def stage_anim(spec, out):
     sc.render.fps = FPS
     rig = bpy.data.objects["Rig"]
     A = Animator(rig, spec)
+    A.numbers = body_numbers(A)
     calibrate_reach(A)
     g = spec["gaits"]
     clips = [
@@ -759,7 +815,7 @@ def stage_anim(spec, out):
         ("Walk", round(g["Walk"]["seconds"] * FPS), gait("Walk")),
         ("Run", round(g["Run"]["seconds"] * FPS), gait("Run")),
         ("Attack", 24, attack),
-        ("Ability", 75, ability),
+        ("Ability", 42, bull_rush) if spec.get("ability") == "bull_rush" else ("Ability", 75, ability),
         ("Eat", 105, eat),
         ("Drink", 120, drink),
         ("Rest", 120, rest),

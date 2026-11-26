@@ -60,9 +60,21 @@ own gait added to `pipeline.py` (the same foot-target system, with four feet).
 - Skin weights are automatic. Extreme poses (the Run thigh, the Faint flop) show some stretching.
 - Animations are procedural keyframes, good for a first playable, not a replacement for hand animation.
 
-## ai_experiment/
+## Sculpted base bodies (the Carnotaurus route)
 
-A test of a free local image-to-3D model (Hunyuan3D 2.0 shape model, about 6 GB VRAM, 2.5 minutes per model).
-It produces more natural anatomy but no teeth, eyes or clean toes, an arbitrary pose, no texture on a 12 GB card,
-and its licence does not cover the EU, UK or South Korea, so its output must not ship in the game as things stand.
-It is kept only as a record of the comparison.
+Pure code shapes stay clean but toy-like. For more lifelike anatomy a species can set `"base"` in its spec to a
+sculpted mesh, and everything else (horns, osteoderm rows, mouth cut, teeth, eyes, claws, skin, bake, rig, clips)
+is applied to it unchanged. The Carnotaurus base was made locally and for free:
+
+1. `refrender.py`: render the code-built guide body (`carnotaurus_guide`) with a closed mouth. This fixes pose and proportions.
+2. `ai/realify.py`: an SDXL image-to-image pass turns that render into a detailed concept image (`bases/carnotaurus_concept.png`).
+3. `ai/gen_triposg.py`: TripoSG (MIT licence, about 6 GB VRAM, 90 seconds) sculpts a mesh from the concept image (`bases/carnotaurus_base.glb`).
+4. `dinogen.py` imports it, finds the body axis, straightens the spine sideways, mirrors it, and scales it to real size.
+5. `landmarks.py` renders gridded orthographic views for reading joint, mouth and eye coordinates into the spec.
+
+`show.py` opens a finished species in the Blender window and plays its clips; `show_wip.py` opens the sculpt stage.
+
+Licence notes: TripoSG's code and weights are MIT. Its repository notes that parts of its code derive from Tencent
+projects, and its default background remover is non-commercial, so `gen_triposg.py` uses rembg/u2net and the standard
+decoder instead. The earlier Hunyuan3D test (`ai/gen_shape.py`) is kept only as a record: that model's licence
+excludes the EU, UK and South Korea, so its output is not used.
