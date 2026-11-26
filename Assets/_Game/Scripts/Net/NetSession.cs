@@ -1,4 +1,5 @@
 using System;
+using Dino.Session;
 using Unity.Collections;
 using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
@@ -294,6 +295,14 @@ namespace Dino.Net
             if (Beacon.IsBroadcasting || Beacon.IsListening)
             {
                 if (Beacon.Tick(SceneName)) NearbyVersion++;
+            }
+
+            // A shared world can't freeze because one player opened the pause menu.
+            var session = GameSession.Instance;
+            if (session != null && session.PauseStopsTime == IsActive)
+            {
+                session.PauseStopsTime = !IsActive;
+                if (IsActive && Time.timeScale == 0f) Time.timeScale = 1f;
             }
             if (State == NetState.Joining && Time.unscaledTime > _joinDeadline)
             {

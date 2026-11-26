@@ -70,12 +70,12 @@ namespace Dino.Net
             _canvas.transform.SetParent(transform, false);
             var root = _canvas.transform;
 
-            var open = UiFactory.Button(root, "FriendsButton", "Friends", new Vector2(1, 1), new Vector2(-150, -60),
-                new Vector2(250, 84), Purple, Toggle);
+            var open = UiFactory.Button(root, "FriendsButton", "Friends", new Vector2(1, 1), new Vector2(-275, -80),
+                new Vector2(250, 84), Purple, Toggle); // sits left of the pause button
             _buttonLabel = open.GetComponentInChildren<Text>();
 
             _toastRoot = UiFactory.Rect("Toast", root, new Vector2(1, 1), new Vector2(1, 1), new Vector2(1, 1),
-                new Vector2(-25, -115), new Vector2(760, 64));
+                new Vector2(-28, -150), new Vector2(760, 64));
             UiFactory.Image(_toastRoot, new Color(0, 0, 0, 0.6f), null, false);
             _toast = UiFactory.Label(_toastRoot, "", 28, Color.white);
             _toastRoot.gameObject.SetActive(false);
