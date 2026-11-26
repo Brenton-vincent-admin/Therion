@@ -417,9 +417,11 @@ CARNO_AI["jaw_rest"] = -1.6
 CARNO_AI["teeth"].update({"upper_count": 15, "upper_len": (0.045, 0.085),
                           "overbite": {"y0": -3.045, "z0": 2.476, "slope": 0.1228, "lift": 0.018, "inset": 0.012},
                           "lower_len": (0.015, 0.028), "lower_x": 0.55})
-CARNO_AI["skin"].update({"back": (0.012, 0.010, 0.010), "flank": (0.33, 0.035, 0.025), "belly": (0.20, 0.07, 0.055),
-                         "stripe": (0.008, 0.007, 0.007), "ridge": (0.010, 0.009, 0.009),
-                         "accent_color": (0.035, 0.03, 0.028), "stripe_strength": 0.95})
+CARNO_AI["skin"].update({"back": (0.050, 0.050, 0.054), "flank": (0.36, 0.115, 0.055), "belly": (0.33, 0.21, 0.15),
+                         "stripe": (0.028, 0.028, 0.031), "ridge": (0.040, 0.040, 0.043),
+                         "accent_color": (0.085, 0.08, 0.075), "stripe_strength": 0.9, "dust": (0.42, 0.34, 0.27),
+                         "rugged": 1.0, "roughness": 0.85, "nodule": 15.0, "scale_small": 60.0, "scale_big": 22.0,
+                         "bump_strength": 1.0, "bump_distance": 0.022})
 
 CARNO_AI["views"] = {
     "hero": dict(target=(0, 0.5, 1.6), dist=10.3, az=-38, el=9, lens=50),

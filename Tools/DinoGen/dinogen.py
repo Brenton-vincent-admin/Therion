@@ -591,7 +591,7 @@ def skin_material(spec):
     nt = mat.node_tree
     N, L = nt.nodes, nt.links
     bsdf = N["Principled BSDF"]
-    bsdf.inputs["Roughness"].default_value = 0.62
+    bsdf.inputs["Roughness"].default_value = S.get("roughness", 0.62)
 
     def node(kind, **props):
         n = N.new(kind)
@@ -712,16 +712,27 @@ def skin_material(spec):
     col = mixc(belly, col, S["belly"])
     col = mixc(math_('MULTIPLY', band, S["stripe_strength"]), col, S["stripe"])
     col = mixc(math_('MULTIPLY', blotch, 0.22), col, S["stripe"])
-    col = mixc(maprange(mottle, 0.3, 0.7, 0.0, 0.35), col, (0.03, 0.03, 0.03), 'MULTIPLY')
-    col = mixc(maprange(scales, 0.0, 1.0, 0.38, 0.0), col, (0.3, 0.27, 0.25), 'MULTIPLY')
-    col = mixc(math_('MULTIPLY', fold, 0.3), col, (0.3, 0.27, 0.25), 'MULTIPLY')
+    RG = S.get("rugged", 0.0)        # 0 = smooth hide, 1 = heavily textured
+    col = mixc(maprange(mottle, 0.3, 0.7, 0.0, 0.35 + 0.25 * RG), col, (0.03, 0.03, 0.03), 'MULTIPLY')
+    nod = maprange(voronoi(S.get("nodule", 14.0) / K, feature='F1', vec=wpos), 0.05, 0.55, 1.0, 0.0)   # raised lumps
+    grit = noise(40.0, 6.0, 0.75)
+    dust = math_('MULTIPLY', maprange(noise(1.4, 4.0, 0.6), 0.45, 0.7), maprange(nz, -0.2, 0.6))
+    if RG > 0:
+        col = mixc(math_('MULTIPLY', nod, 0.22 * RG), col, S.get("dust", (0.45, 0.40, 0.34)))
+        col = mixc(math_('MULTIPLY', dust, 0.30 * RG), col, S.get("dust", (0.45, 0.40, 0.34)))
+        col = mixc(maprange(grit, 0.35, 0.75, 0.0, 0.45 * RG), col, (0.2, 0.2, 0.2), 'MULTIPLY')
+    col = mixc(maprange(scales, 0.0, 1.0, 0.38 + 0.35 * RG, 0.0), col, (0.3, 0.27, 0.25), 'MULTIPLY')
+    col = mixc(math_('MULTIPLY', fold, 0.3 + 0.3 * RG), col, (0.3, 0.27, 0.25), 'MULTIPLY')
     col = mixc(math_('MULTIPLY', ridge, 0.5), col, S["ridge"])
     L.new(col, bsdf.inputs["Base Color"])
 
     # --- bump -----------------------------------------------------------------
     h = math_('ADD', math_('MULTIPLY', maprange(scales, 0.0, 1.0), mixc(big_mask, 0.45, 1.0)),
-              math_('MULTIPLY', fold, -1.0))
+              math_('MULTIPLY', fold, -1.0 - 1.2 * RG))
     h = math_('ADD', h, math_('MULTIPLY', broad, 1.2))
+    if RG > 0:
+        h = math_('ADD', h, math_('MULTIPLY', nod, 1.6 * RG))
+        h = math_('ADD', h, math_('MULTIPLY', grit, 0.7 * RG))
     bump = node("ShaderNodeBump")
     bump.inputs["Strength"].default_value = S.get("bump_strength", 0.55)
     bump.inputs["Distance"].default_value = S.get("bump_distance", 0.012)
