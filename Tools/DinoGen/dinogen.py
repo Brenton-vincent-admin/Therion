@@ -261,7 +261,7 @@ def import_base(spec):
         if bx:
             inside = ((ax[:, 0] > bx["x"]) & (ax[:, 1] > bx["y"][0]) & (ax[:, 1] < bx["y"][1]) & (ax[:, 2] > bx["z"][0]))
             w = np.maximum(w, inside * sm((bx["z"][1] - ax[:, 2]) / 0.1))
-        new = pts[0] + (ax - pts[0]) * AR["f"]
+        new = pts[0] + (ax - pts[0]) * np.array([AR.get("fx", AR["f"]), AR["f"], AR["f"]]) + np.array([AR.get("dx", 0.0), 0, 0])
         ax2 = ax + (new - ax) * w[:, None]
         co[:, 0] = np.sign(co[:, 0]) * ax2[:, 0]
         co[:, 1:] = ax2[:, 1:]

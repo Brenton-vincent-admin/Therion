@@ -485,17 +485,17 @@ CARNO_AI["teeth"]["front"] = {"count": 9, "spread": 62, "len": 0.10, "thin": 0.1
 
 # Brenton's third round: meat from the pelvis into the tail, torso closer to the ground, comically small arms.
 _AR = {"chain": [(0.57, -0.62, 1.75), (0.595, -0.76, 1.55), (0.535, -0.93, 1.38), (0.51, -0.90, 1.20)],
-       "radius": 0.17, "x_min": 0.50, "f": 0.5,
+       "radius": 0.17, "x_min": 0.50, "f": 0.5, "fx": 0.25, "dx": -0.07,
        "free": {"x": 0.34, "y": (-1.25, -0.45), "z": (0.95, 1.60)}}
 CARNO_AI["base"]["arm_scale"] = _AR
-CARNO_AI["base"]["thicken"] = [{"y": (0.9, 3.6), "fade": 0.7, "f": 0.34, "z_min": 1.5,
+CARNO_AI["base"]["thicken"] = [{"y": (0.35, 1.55), "fade": 0.55, "f": 0.16, "z_min": 1.2,   # rump only, tail untouched
                                 "zc": ([0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0], [2.12, 2.28, 2.36, 2.37, 2.37, 2.33, 2.30, 2.29])}]
 _BK.update({"belly": 0.30, "belly_z": (2.15, 1.15), "y": (-2.15, 2.4)})
 CARNO_AI["rest"] = {"drop": (1.18 - 0.30 - 0.03) / CK}
 _S = _AR["chain"][0]
 for _k, _i in (("shoulder", 0), ("elbow", 1), ("wrist", 2), ("finger", 3)):
     _p = _AR["chain"][_i]
-    _q = tuple(_S[j] + (_p[j] - _S[j]) * _AR["f"] for j in range(3))
+    _q = (_S[0] + (_p[0] - _S[0]) * _AR["fx"] + _AR["dx"],) + tuple(_S[j] + (_p[j] - _S[j]) * _AR["f"] for j in (1, 2))
     CARNO_AI["joints"][_k] = (_q[0] * _bulk_x(_q[1], _BK), _q[1], _q[2])
 
 CARNO_AI["views"] = {
