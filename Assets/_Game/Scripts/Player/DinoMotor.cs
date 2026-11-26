@@ -88,7 +88,10 @@ namespace Dino.Player
 
             // ----- water -----
             float h = Actor.Height;
-            Vector3 chest = transform.position + Vector3.up * h * 0.6f;
+            // Start swimming when the water reaches the chest; keep swimming until it drops to the belly,
+            // so floating at the surface doesn't flicker between swimming and walking.
+            float probe = IsSwimming ? 0.4f : 0.6f;
+            Vector3 chest = transform.position + Vector3.up * h * probe;
             IsSwimming = WaterVolume.TryGetWaterAt(chest, out var water);
 
             // ----- speed -----
@@ -129,9 +132,8 @@ namespace Dino.Player
             // ----- vertical -----
             if (IsSwimming)
             {
-                float targetY = water.SurfaceY - h * 0.55f; // float with the head above water
+                float targetY = water.SurfaceY - h * 0.7f; // float with head and back above water
                 _verticalSpeed = Mathf.Clamp((targetY - transform.position.y) * 3f, -3f, 3f);
-                if (input.Jump) _verticalSpeed = 4f; // hop out onto a bank
             }
             else
             {
@@ -151,9 +153,6 @@ namespace Dino.Player
             IsGrounded = _cc.isGrounded;
             Velocity = motion;
             HorizontalSpeed = new Vector3(motion.x, 0, motion.z).magnitude;
-
-            // Safety net: fell through the world.
-            if (transform.position.y < -200f) Teleport(transform.position + Vector3.up * 400f, transform.rotation);
 
             UpdateAnimator(sp.runSpeed * sizeFactor, fainted);
         }

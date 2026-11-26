@@ -42,7 +42,15 @@ namespace Dino.Session
         ThirdPersonCamera _cam;
         Hud _hud;
         SpeciesSelectScreen _select;
+        PauseMenu _pause;
         float _autosaveTimer, _minuteTimer, _faintTimer;
+        float _hintCooldown;
+        bool _hungryHinted, _thirstyHinted;
+
+        /// <summary>True while the pause menu is open (time is stopped).</summary>
+        public bool IsPaused => _pause && _pause.IsOpen;
+        /// <summary>Set false when playing with others, where one player must not freeze the world.</summary>
+        public bool PauseStopsTime = true;
         float _foodXpBank, _waterXpBank;
 
         void Awake()
@@ -66,6 +74,11 @@ namespace Dino.Session
             _select.SpeciesChosen += s => StartNewRun(s, null);
             _select.UnlockAllChanged += on => { Save.settings.unlockAllSpecies = on; SaveSystem.Save(Save); };
             _select.ModeChanged += m => { Save.settings.mode = m; SaveSystem.Save(Save); };
+            _pause = new GameObject("PauseMenu").AddComponent<PauseMenu>();
+            _pause.transform.SetParent(transform, false);
+            _pause.ResumeClicked += ClosePause;
+            _pause.NewDinoConfirmed += ReleaseDinoAndPickNew;
+            _hud.PauseClicked += OpenPause;
 
             GameEvents.Ate += OnAte;
             GameEvents.Drank += OnDrank;
@@ -79,7 +92,7 @@ namespace Dino.Session
             GameEvents.Drank -= OnDrank;
             GameEvents.GrewUp -= OnGrewUp;
             GameEvents.Fainted -= OnAnyFainted;
-            if (Instance == this) Instance = null;
+            if (Instance == this) { Instance = null; Time.timeScale = 1f; }
         }
 
         void Start()
@@ -143,6 +156,13 @@ namespace Dino.Session
             SpawnPlayer(species, run.stage, run.variantId, pos, Quaternion.Euler(0, run.yaw, 0));
             Player.GetComponent<DinoGrowth>().SecondsInStage = run.secondsInStage;
             if (run.health > 0f) Player.Stats.SetValues(run.health, run.stamina, run.food, run.water);
+            else if (Mode == GameMode.Hardcore && run.fainted)
+            {
+                // The app closed during a Hardcore faint: the run is over, same as if it had stayed open.
+                Player.Stats.Faint(null);
+                return;
+            }
+            else if (run.fainted) Player.Stats.Revive(0.6f); // Survival: wake up where you fell
             _hud.ShowBanner($"Welcome back, {species.displayName}!");
         }
 
@@ -169,6 +189,7 @@ namespace Dino.Session
             _touch.SetVisible(Application.isMobilePlatform || Save.settings.showTouchControls);
             _router.InputEnabled = true;
             _faintTimer = 0f;
+            _hungryHinted = _thirstyHinted = false;
             PlayerSpawned?.Invoke(Player);
         }
 
@@ -179,6 +200,46 @@ namespace Dino.Session
             Vector3 p = Vector3.zero;
             if (Physics.Raycast(new Vector3(0, 500, 0), Vector3.down, out var hit, 1000f, ~0, QueryTriggerInteraction.Ignore)) p = hit.point;
             return (p, Quaternion.identity);
+        }
+
+        // ---------------- pause ----------------
+
+        public void OpenPause()
+        {
+            if (!Player || IsPaused || _select.IsOpen) return;
+            WriteSave();
+            _router.InputEnabled = false;
+            _touch.SetVisible(false);
+            if (PauseStopsTime) Time.timeScale = 0f;
+            _pause.Open(Player.Species.displayName, Mode, Progression.Level, Progression.Xp);
+        }
+
+        public void ClosePause()
+        {
+            if (!IsPaused) return;
+            _pause.Close();
+            Time.timeScale = 1f;
+            if (Player && !Player.Stats.IsFainted) _router.InputEnabled = true;
+            _touch.SetVisible(Player && (Application.isMobilePlatform || Save.settings.showTouchControls));
+        }
+
+        /// <summary>Ends the current run by choice and goes back to the dino picker. XP and unlocks are kept.</summary>
+        public void ReleaseDinoAndPickNew()
+        {
+            _pause.Close();
+            Time.timeScale = 1f;
+            EndRun();
+            OpenSpeciesSelect();
+        }
+
+        void EndRun()
+        {
+            Save.run = new RunData(); // XP and unlocks live in the profile and are kept
+            if (Player) Destroy(Player.gameObject);
+            Player = null;
+            _cam.target = null;
+            _hud.Bind(null);
+            WriteSave();
         }
 
         // ---------------- loop ----------------
@@ -198,6 +259,8 @@ namespace Dino.Session
                 }
                 else
                 {
+                    RescueIfOutOfWorld();
+                    ShowHints();
                     _minuteTimer += Time.deltaTime;
                     if (_minuteTimer >= 60f)
                     {
@@ -212,8 +275,51 @@ namespace Dino.Session
             if (_autosaveTimer >= autosaveSeconds) { _autosaveTimer = 0f; WriteSave(); }
         }
 
+        /// <summary>Fell off the edge of the map or through the ground: put the dino back on land.</summary>
+        void RescueIfOutOfWorld()
+        {
+            if (Player.transform.position.y > OutOfWorldY) return;
+            var s = FindSpawn(Player.Species);
+            Player.Motor.Teleport(s.pos + Vector3.up * 0.5f, s.rot);
+            _cam.SnapBehindTarget();
+            _hud.ShowBanner("Whoops! Back on dry land.");
+        }
+        const float OutOfWorldY = -60f;
+
+        /// <summary>One gentle reminder each time a meter gets low, so a young player knows what to look for.</summary>
+        void ShowHints()
+        {
+            if (Mode == GameMode.Explorer) return;
+            _hintCooldown -= Time.deltaTime;
+            var st = Player.Stats;
+            if (st.Food.Normalized > 0.5f) _hungryHinted = false;
+            if (st.Water.Normalized > 0.5f) _thirstyHinted = false;
+            if (_hintCooldown > 0f) return;
+
+            if (!_thirstyHinted && st.Water.Normalized < 0.25f)
+            {
+                _thirstyHinted = true; _hintCooldown = 8f;
+                _hud.ShowBanner("You're thirsty! Find some water.");
+            }
+            else if (!_hungryHinted && st.Food.Normalized < 0.25f)
+            {
+                _hungryHinted = true; _hintCooldown = 8f;
+                _hud.ShowBanner(FoodHint(Player.Species));
+            }
+        }
+
+        static string FoodHint(SpeciesDefinition sp)
+        {
+            var mask = sp.EdibleMask;
+            if ((mask & FoodType.Meat) != 0 && (mask & (FoodType.Berries | FoodType.Leaves)) == 0) return "You're hungry! Find some meat.";
+            if ((mask & FoodType.Berries) != 0) return "You're hungry! Find some berries.";
+            if ((mask & FoodType.Leaves) != 0) return "You're hungry! Find some leaves.";
+            return "You're hungry! Find some food.";
+        }
+
         void OnPlayerFainted(GameObject attacker)
         {
+            if (IsPaused) ClosePause();
             _faintTimer = 0f;
             _router.InputEnabled = false;
             _hud.ShowBanner(Mode == GameMode.Hardcore ? "Oh no, you fainted!" : "You fainted! Time for a nap...", faintWakeSeconds);
@@ -224,11 +330,7 @@ namespace Dino.Session
             if (Mode == GameMode.Hardcore)
             {
                 Save.profile.bestHardcoreMinutes = Mathf.Max(Save.profile.bestHardcoreMinutes, Save.run.minutesAlive);
-                Save.run = new RunData(); // run over; XP and unlocks are kept
-                Destroy(Player.gameObject);
-                Player = null;
-                _hud.Bind(null);
-                WriteSave();
+                EndRun(); // run over; XP and unlocks are kept
                 OpenSpeciesSelect();
                 return;
             }
@@ -307,6 +409,7 @@ namespace Dino.Session
                 var r = Save.run;
                 r.stage = Player.StageIndex;
                 r.secondsInStage = Player.GetComponent<DinoGrowth>().SecondsInStage;
+                r.fainted = Player.Stats.IsFainted;
                 r.health = Player.Stats.Health.Current;
                 r.stamina = Player.Stats.Stamina.Current;
                 r.food = Player.Stats.Food.Current;

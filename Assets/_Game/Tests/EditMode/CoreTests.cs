@@ -82,6 +82,29 @@ namespace Dino.Tests
         }
 
         [Test]
+        public void RunningUntilEmptyNeedsABreatherBeforeRunningAgain()
+        {
+            _species.runStaminaPerSecond = 100f;
+            _species.staminaRegenPerSecond = 10f;
+            _stats.Configure(_species, _species.StageCount - 1, null, false);
+            Assert.IsTrue(_stats.CanRun);
+            _stats.IsRunning = true;
+            _stats.Tick(0.5f);
+            _stats.Tick(0.6f);
+            Assert.IsTrue(_stats.Stamina.IsEmpty);
+            Assert.IsTrue(_stats.IsExhausted);
+            Assert.IsFalse(_stats.CanRun);
+
+            _stats.IsRunning = false;
+            _stats.Tick(1.6f);  // catch-breath pause before stamina starts coming back
+            _stats.Tick(1.0f);  // +10
+            Assert.IsFalse(_stats.CanRun, "10% is not enough to run again");
+            _stats.Tick(2.0f);  // +20 -> 30%
+            Assert.IsFalse(_stats.IsExhausted);
+            Assert.IsTrue(_stats.CanRun);
+        }
+
+        [Test]
         public void StarvingHurts()
         {
             _stats.Food.Set(0);
