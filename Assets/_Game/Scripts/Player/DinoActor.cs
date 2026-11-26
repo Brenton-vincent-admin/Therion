@@ -41,6 +41,25 @@ namespace Dino.Player
 
         void Awake() => CacheComponents();
 
+        float _tip, _nod;
+        DinoInteractor _interactor;
+
+        /// <summary>
+        /// Stand-in motion for models without an Animator (the placeholder shapes): tip over when
+        /// fainted and nod while eating, so a player can see what their dino is doing.
+        /// </summary>
+        void Update()
+        {
+            if (ModelRoot == null || Animator != null || Species == null) return;
+            if (_interactor == null) _interactor = GetComponent<DinoInteractor>();
+            float dt = Time.deltaTime;
+            _tip = Mathf.MoveTowards(_tip, Stats.IsFainted ? 85f : 0f, 240f * dt);
+            bool eating = _interactor != null && _interactor.IsEating && !Stats.IsFainted;
+            float nodTarget = eating ? 14f + 10f * Mathf.Sin(Time.time * 12f) : 0f;
+            _nod = Mathf.Lerp(_nod, nodTarget, 1f - Mathf.Exp(-15f * dt));
+            ModelRoot.localRotation = Quaternion.Euler(_nod, 0f, _tip);
+        }
+
         void CacheComponents()
         {
             if (Stats) return;
@@ -113,6 +132,7 @@ namespace Dino.Player
             }
             ModelRoot.localPosition = Vector3.zero;
             ModelRoot.localRotation = Quaternion.identity;
+            _tip = _nod = 0f;
         }
 
         /// <summary>
