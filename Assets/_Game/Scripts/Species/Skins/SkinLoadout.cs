@@ -62,6 +62,7 @@ namespace Dino.Species
     {
         Leaf, Moss, Sand, Clay, Stone, Cream, Sunset, Berry, Sky, Lagoon, Grape, Sunflower,
         Coral, Mint, Charcoal, Snow, Amber, Gold, Crystal, WaterfallBlue, NightGlow,
+        Crimson, Wine, Obsidian,
     }
 
     /// <summary>Saved by value: only ever add new entries at the end. Index = slice in the pattern mask array.</summary>
@@ -93,6 +94,9 @@ namespace Dino.Species
             0xB8F2FF, // Crystal       (Hardcore reward)
             0x3FA9F5, // Waterfall Blue (find the waterfall)
             0x7CFFB2, // Night Glow    (survive 3 nights; eyes)
+            0x9B352C, // Crimson       (deep red; Carnotaurus flanks)
+            0x7C4B42, // Wine          (dark red; Carnotaurus belly)
+            0x1D1919, // Obsidian      (true black; Carnotaurus back, horns and bands)
         };
 
         public static int Count => Hex.Length;

@@ -124,7 +124,7 @@ namespace Dino.Species
               Temperament.Predator, "Horned sprinter that runs prey down in a straight line",
               new StarStats(3, 4, 4, 3, 4, 3), false, SignatureAbility.BullRush,
               "Bull rush: a long, fast charge you can't steer", "Longer rush", "Head-ram staggers what it hits",
-              8f, 3f, 10, SkinLoadout.Of(SkinColor.Clay, SkinColor.Sand, SkinPattern.Speckles, SkinColor.Berry, SkinColor.Charcoal),
+              8f, 3f, 10, SkinLoadout.Of(SkinColor.Crimson, SkinColor.Wine, SkinPattern.Bands, SkinColor.Obsidian, SkinColor.Obsidian),
               "Original model in progress (Blender thread, biped-hunter base)", 1.2f),
 
             E(13, "trex", "T. rex", "Tyrannosaurus rex", Diet.Carnivore, MoveType.Land, SizeClass.Huge,

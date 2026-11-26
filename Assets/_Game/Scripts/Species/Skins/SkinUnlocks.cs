@@ -25,6 +25,7 @@ namespace Dino.Species
             R("species_challenge", "Use your special move 20 times", null, new[] { SkinPattern.Leopard }),
             R("hardcore_adult", "Grow to Adult in Hardcore", new[] { SkinColor.Gold, SkinColor.Crystal }, null),
             R("play_together", "Play with a friend", new[] { SkinColor.Coral }, null),
+            R("unlock_carnotaurus", "Unlock the Carnotaurus", new[] { SkinColor.Crimson, SkinColor.Wine, SkinColor.Obsidian }, null),
         };
 
         static Reward R(string id, string hint, SkinColor[] c, SkinPattern[] p)
