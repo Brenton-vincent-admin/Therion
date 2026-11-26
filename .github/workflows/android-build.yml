@@ -121,6 +121,17 @@ jobs:
             Library-Android-${{ hashFiles('Packages/packages-lock.json', 'ProjectSettings/ProjectVersion.txt') }}-
             Library-Android-
 
+      # GameCI publishes Unity 6.x editor images under image version 4
+      # (e.g. unityci/editor:ubuntu-6000.6.10f1-android-4). Read the version
+      # from ProjectVersion.txt so upgrading Unity needs no workflow change.
+      - name: Pick Unity image
+        id: unity
+        run: |
+          V=$(grep -m1 'm_EditorVersion:' ProjectSettings/ProjectVersion.txt | awk '{print $2}' | tr -d '\r')
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          echo "image=unityci/editor:ubuntu-${V}-android-4" >> "$GITHUB_OUTPUT"
+          echo "Unity $V -> unityci/editor:ubuntu-${V}-android-4"
+
       - name: Build with Unity (GameCI)
         uses: game-ci/unity-builder@v4
         env:
@@ -129,7 +140,8 @@ jobs:
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         with:
           targetPlatform: Android
-          # Unity version is read from ProjectSettings/ProjectVersion.txt.
+          unityVersion: ${{ steps.unity.outputs.version }}
+          customImage: ${{ steps.unity.outputs.image }}
           # Package id, IL2CPP/ARM64 etc. come from the committed Player Settings
           # (applied with the Dino > Project Setup editor menu).
           buildName: Therion
