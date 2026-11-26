@@ -16,3 +16,7 @@ See [CONTRACTS.md](CONTRACTS.md) for folders, namespaces and the shared interfac
 - Code namespace is `Dino.*`; the game's name and package id live only in `Assets/_Game/Scripts/Core/GameInfo.cs`.
 - Android package id `com.brenton.therion` is final.
 - Work on a branch and open a pull request into `main`.
+
+## Building for phones
+
+GitHub Actions builds the Android APK and can send it to family phones through Firebase App Distribution. One-time setup: [docs/BUILD_AND_INSTALL.md](docs/BUILD_AND_INSTALL.md).

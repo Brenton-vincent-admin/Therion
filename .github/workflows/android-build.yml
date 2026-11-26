@@ -1,0 +1,212 @@
+# Builds the Android APK with GameCI and (optionally) sends it to
+# everyone's phones through Firebase App Distribution.
+#
+# Runs when:
+#   - you push to main (game files changed)
+#   - you press "Run workflow" on the Actions tab (choose whether to send to phones)
+#   - you push a tag like v0.2.0 (always sent to phones)
+#
+# Everything here is free: GitHub Actions minutes (2,000/month on private
+# repos), GameCI, and Firebase App Distribution on the free Spark plan.
+# Setup steps for the secrets are in docs/BUILD_AND_INSTALL.md.
+
+name: Android build
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+    paths:
+      - 'Assets/**'
+      - 'Packages/**'
+      - 'ProjectSettings/**'
+      - '.github/workflows/android-build.yml'
+  workflow_dispatch:
+    inputs:
+      send_to_phones:
+        description: 'Send this build to the family testers in Firebase'
+        type: boolean
+        default: true
+      release_notes:
+        description: "What's new (shown in the App Tester app)"
+        type: string
+        default: ''
+
+# One build at a time; a newer push cancels an older running build.
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # Shown to players and used by the multiplayer version check.
+  # versionCode must always go up or phones refuse the update.
+  GAME_VERSION: 0.1.${{ github.run_number }}
+  VERSION_CODE: ${{ github.run_number }}
+
+jobs:
+  check-secrets:
+    name: Check setup
+    runs-on: ubuntu-latest
+    outputs:
+      can_build: ${{ steps.check.outputs.can_build }}
+      can_sign: ${{ steps.check.outputs.can_sign }}
+      can_distribute: ${{ steps.check.outputs.can_distribute }}
+    steps:
+      - id: check
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASS: ${{ secrets.ANDROID_KEYSTORE_PASS }}
+          ANDROID_KEYALIAS_NAME: ${{ secrets.ANDROID_KEYALIAS_NAME }}
+          ANDROID_KEYALIAS_PASS: ${{ secrets.ANDROID_KEYALIAS_PASS }}
+          FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          ok() { [ -n "$1" ]; }
+          if ok "$UNITY_LICENSE" && ok "$UNITY_EMAIL" && ok "$UNITY_PASSWORD"; then
+            echo "can_build=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "can_build=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Unity secrets are missing, so no APK was built. See docs/BUILD_AND_INSTALL.md, step 2."
+          fi
+          if ok "$ANDROID_KEYSTORE_BASE64" && ok "$ANDROID_KEYSTORE_PASS" && ok "$ANDROID_KEYALIAS_NAME" && ok "$ANDROID_KEYALIAS_PASS"; then
+            echo "can_sign=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "can_sign=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::No signing key yet: the APK uses a throwaway debug key, so phones can't update it in place and it can't be registered with Google. See step 3."
+          fi
+          if ok "$FIREBASE_APP_ID" && ok "$FIREBASE_SERVICE_ACCOUNT"; then
+            echo "can_distribute=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "can_distribute=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Firebase secrets not set; the APK will only be attached to this run. See step 4."
+          fi
+
+  build:
+    name: Build APK
+    needs: check-secrets
+    if: needs.check-secrets.outputs.can_build == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      # The Android editor image is large; free space on the runner first.
+      - name: Free disk space
+        uses: jlumbroso/free-disk-space@v1.3.1
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: false
+          docker-images: false
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      # Unity's Library folder is a cache of imported assets. Restoring it
+      # turns a ~40 minute build into ~10 to 15 minutes.
+      - name: Cache Unity Library
+        uses: actions/cache@v4
+        with:
+          path: Library
+          key: Library-Android-${{ hashFiles('Packages/packages-lock.json', 'ProjectSettings/ProjectVersion.txt') }}-${{ github.sha }}
+          restore-keys: |
+            Library-Android-${{ hashFiles('Packages/packages-lock.json', 'ProjectSettings/ProjectVersion.txt') }}-
+            Library-Android-
+
+      - name: Build with Unity (GameCI)
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          targetPlatform: Android
+          # Unity version is read from ProjectSettings/ProjectVersion.txt.
+          # Package id, IL2CPP/ARM64 etc. come from the committed Player Settings
+          # (applied with the Dino > Project Setup editor menu).
+          buildName: Therion
+          versioning: Custom
+          version: ${{ env.GAME_VERSION }}
+          androidVersionCode: ${{ env.VERSION_CODE }}
+          androidExportType: androidPackage   # .apk, which sideloads directly
+          androidSymbolType: none
+          androidKeystoreName: ${{ needs.check-secrets.outputs.can_sign == 'true' && 'release.keystore' || '' }}
+          androidKeystoreBase64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          androidKeystorePass: ${{ secrets.ANDROID_KEYSTORE_PASS }}
+          androidKeyaliasName: ${{ secrets.ANDROID_KEYALIAS_NAME }}
+          androidKeyaliasPass: ${{ secrets.ANDROID_KEYALIAS_PASS }}
+
+      - name: Find the APK
+        id: apk
+        run: |
+          APK=$(find build/Android -name '*.apk' | head -n 1)
+          if [ -z "$APK" ]; then echo "::error::No APK was produced"; exit 1; fi
+          sudo chown -R "$(id -u):$(id -g)" build
+          mv "$APK" "build/Therion-${GAME_VERSION}.apk"
+          echo "path=build/Therion-${GAME_VERSION}.apk" >> "$GITHUB_OUTPUT"
+          echo "### APK built: Therion ${GAME_VERSION} (versionCode ${VERSION_CODE})" >> "$GITHUB_STEP_SUMMARY"
+
+      # Prints the signing certificate's SHA-256 fingerprint. You paste this
+      # into Google's Android Developer Console when registering the app.
+      # A fingerprint is public information, not a secret.
+      - name: Show signing fingerprint
+        if: needs.check-secrets.outputs.can_sign == 'true'
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASS: ${{ secrets.ANDROID_KEYSTORE_PASS }}
+          ANDROID_KEYALIAS_NAME: ${{ secrets.ANDROID_KEYALIAS_NAME }}
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/ks"
+          FP=$(keytool -list -v -keystore "$RUNNER_TEMP/ks" -storepass "$ANDROID_KEYSTORE_PASS" -alias "$ANDROID_KEYALIAS_NAME" | grep -E '^\s*SHA256:' | sed 's/.*SHA256: *//')
+          rm -f "$RUNNER_TEMP/ks"
+          {
+            echo '### Signing certificate SHA-256 (paste into Android Developer Console)'
+            echo '```'
+            echo "$FP"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Attach APK to this run
+        uses: actions/upload-artifact@v4
+        with:
+          name: Therion-${{ env.GAME_VERSION }}
+          path: ${{ steps.apk.outputs.path }}
+          retention-days: 14
+
+  distribute:
+    name: Send to phones (Firebase)
+    needs: [check-secrets, build]
+    if: >-
+      needs.check-secrets.outputs.can_distribute == 'true' &&
+      (startsWith(github.ref, 'refs/tags/v') ||
+       (github.event_name == 'workflow_dispatch' && inputs.send_to_phones))
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: Therion-${{ env.GAME_VERSION }}
+          path: apk
+
+      - name: Write release notes
+        env:
+          NOTES: ${{ inputs.release_notes }}
+        run: |
+          if [ -z "$NOTES" ]; then NOTES="New version ${GAME_VERSION}"; fi
+          printf '%s\n' "$NOTES" > notes.txt
+
+      - name: Upload to Firebase App Distribution
+        uses: wzieba/Firebase-Distribution-Github-Action@v1.7.0
+        with:
+          appId: ${{ secrets.FIREBASE_APP_ID }}
+          serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          groups: family
+          file: apk/Therion-${{ env.GAME_VERSION }}.apk
+          releaseNotesFile: notes.txt
