@@ -246,6 +246,20 @@ def import_base(spec):
     mids = np.convolve(np.pad(mids, 3, mode='edge'), np.ones(7) / 7, mode='valid')
     co[:, 0] -= np.interp(co[:, 1], centres, mids) + B.get("x_shift", 0.0)
     log("midline offset range", round(float(mids.min()), 3), round(float(mids.max()), 3))
+    sm = lambda t: np.clip(t, 0, 1) ** 2 * (3 - 2 * np.clip(t, 0, 1))
+    HS = B.get("head_scale")        # enlarge the head about the neck joint
+    if HS:
+        w = sm((HS["y1"] - co[:, 1]) / (HS["y1"] - HS["y0"]))
+        piv = np.array(HS["pivot"])
+        co[:] = piv + (co - piv) * (1 + (HS["f"] - 1) * w)[:, None]
+    BK = B.get("bulk")              # fatten the torso: wider everywhere, belly hanging lower near the midline
+    if BK:
+        y0, y1 = BK["y"]
+        w = sm((co[:, 1] - y0) / BK.get("fade", 0.6)) * sm((y1 - co[:, 1]) / BK.get("fade", 0.6))
+        co[:, 0] *= 1 + BK["x"] * w
+        zt, zb = BK["belly_z"]
+        bw = sm((zt - co[:, 2]) / (zt - zb)) * sm((BK["belly_x"] - np.abs(co[:, 0])) / 0.2) * (co[:, 2] > zb - 0.25)
+        co[:, 2] -= BK["belly"] * w * bw
     me.vertices.foreach_set("co", co.astype(np.float32).ravel())
     me.update()
     if B.get("symmetrize", "+") in ("+", "-"):
@@ -426,6 +440,18 @@ def build_accessories(spec, high=None):
             hit = cast((x, y, c[2]), (0, 0, -1), c[4] * 1.3)
             base = (x, y, (hit.z + 0.025) if hit else c[2] - T["upper_z"] * c[4])
             cone(bm, base, (sx * 0.02, 0.10, -1), size + 0.025, size * 0.33, hook=0.18, hook_dir=(0, 1, 0))
+    FR = T.get("front")     # thin teeth around the front of the snout, hanging in front of the chin
+    if FR:
+        for i in range(FR["count"]):
+            a = math.radians(-FR["spread"] + 2 * FR["spread"] * i / (FR["count"] - 1))
+            dirv = Vector((math.sin(a), -math.cos(a), 0))
+            centre = Vector((0, FR["y_c"], FR["z"]))
+            hit = cast(centre + dirv * 1.0, -dirv, 1.0)
+            if not hit:
+                continue
+            ln = FR["len"] * (0.85 + 0.3 * ((i * 7919) % 5) / 4)
+            cone(bm, hit - dirv * FR.get("inset", 0.008), (dirv.x * 0.06, dirv.y * 0.06, -1), ln, ln * FR.get("thin", 0.17),
+                 hook=0.1, hook_dir=(0, 1, 0))
     bm.verts.ensure_lookup_table()
     objs.append(finish(bm, "TeethUpper", {"Head": list(range(len(bm.verts)))}))
 

@@ -426,6 +426,63 @@ CARNO_AI["skin"].update({"back": (0.050, 0.050, 0.054), "flank": (0.36, 0.115, 0
                          "rugged": 1.0, "roughness": 0.85, "nodule_strength": 0.0, "crackle": 1.0, "scale_small": 70.0, "scale_big": 16.0,
                          "bump_strength": 1.0, "bump_distance": 0.022})
 
+# Brenton's second round: bigger chunky head, fatter heavy-set body, stronger overbite, thin front teeth.
+def _sm(t):
+    t = min(1.0, max(0.0, t))
+    return t * t * (3 - 2 * t)
+
+
+def _head_scale(spec, pivot, f, y0, y1):
+    """Scale every head landmark about the neck joint, matching the base mesh's head_scale."""
+    def pt(p):
+        w = _sm((y1 - p[1]) / (y1 - y0))
+        k = 1 + (f - 1) * w
+        return tuple(pivot[i] + (p[i] - pivot[i]) * k for i in range(3)), k
+
+    def ring(r):
+        (x, y, z), k = pt(r[:3])
+        return (x, y, z, r[3] * k, r[4] * k)
+    for p in spec["lofts"]:
+        if p["name"] != "Body":
+            p["ctrl"] = [ring(r) for r in p["ctrl"]]
+    spec["head_ctrl"] = [ring(r) for r in spec["head_ctrl"]]
+    spec["jaw_ctrl"] = [ring(r) for r in spec["jaw_ctrl"]]
+    for e in spec["ellipsoids"] + spec["cuts"]:
+        c, k = pt(e["c"])
+        e["c"] = c
+        e["r"] = tuple(v * k for v in e["r"])
+    c, k = pt(spec["eye"]["c"])
+    spec["eye"]["c"] = c
+    spec["eye"]["r"] *= k
+    spec["head_bone"] = tuple(pt(p)[0] for p in spec["head_bone"])
+    spec["jaw_bone"] = tuple(pt(p)[0] for p in spec["jaw_bone"])
+    spec["mouth_split_y"] = pt((0, spec["mouth_split_y"], pivot[2]))[0][1]
+    spec["skin"]["accent_points"] = [(pt(q)[0], r * pt(q)[1]) for q, r in spec["skin"]["accent_points"]]
+    ob = spec["teeth"]["overbite"]
+    (_, ob["y0"], ob["z0"]), _k = pt((0, ob["y0"], ob["z0"]))
+    for key in ("upper_y", "lower_y"):
+        spec["teeth"][key] = tuple(pt((0, y, pivot[2]))[0][1] for y in spec["teeth"][key])
+
+
+def _bulk_x(y, B):
+    return 1 + B["x"] * _sm((y - B["y"][0]) / B["fade"]) * _sm((B["y"][1] - y) / B["fade"])
+
+
+_HS = {"pivot": (0.0, -2.30, 2.62), "f": 1.16, "y0": -2.35, "y1": -1.95}
+_BK = {"y": (-2.15, 2.1), "fade": 0.6, "x": 0.20, "belly": 0.15, "belly_z": (2.0, 1.2), "belly_x": 0.62}
+CARNO_AI["base"]["head_scale"] = _HS
+CARNO_AI["base"]["bulk"] = _BK
+_head_scale(CARNO_AI, _HS["pivot"], _HS["f"], _HS["y0"], _HS["y1"])
+CARNO_AI["joints"] = {k: (v[0] * _bulk_x(v[1], _BK), v[1], v[2]) for k, v in CARNO_AI["joints"].items()}
+for _c in CARNO_AI["claws"]:
+    _c["base"] = (_c["base"][0] * _bulk_x(_c["base"][1], _BK), _c["base"][1], _c["base"][2])
+CARNO_AI["rest"] = {"drop": (1.18 - 0.15 - 0.03) / CK}
+CARNO_AI["teeth"].update({"upper_len": (0.065, 0.125), "lower_len": (0.012, 0.022)})
+_ob = CARNO_AI["teeth"]["overbite"]
+_tip_y = min(r[1] for r in CARNO_AI["head_ctrl"])
+CARNO_AI["teeth"]["front"] = {"count": 9, "spread": 62, "len": 0.10, "thin": 0.15, "inset": 0.008,
+                              "y_c": _tip_y + 0.16, "z": _ob["z0"] + (_tip_y + 0.06 - _ob["y0"]) * _ob["slope"] + 0.022}
+
 CARNO_AI["views"] = {
     "hero": dict(target=(0, 0.5, 1.6), dist=10.3, az=-38, el=9, lens=50),
     "side": dict(target=(0, 0.7, 1.55), dist=11.2, az=-90, el=4, lens=50),
