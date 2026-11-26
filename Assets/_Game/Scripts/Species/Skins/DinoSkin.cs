@@ -35,10 +35,21 @@ namespace Dino.Species
             if (renderers == null || renderers.Length == 0) renderers = GetComponentsInChildren<Renderer>(true);
         }
 
+        bool _applied;
+
+        void Start()
+        {
+            // Nobody chose a look yet: show the species' default one.
+            if (_applied) return;
+            var actor = GetComponentInParent<Dino.Player.DinoActor>();
+            if (actor != null && actor.Species != null) Apply(actor.Species.defaultSkin);
+        }
+
         public void Apply(SkinLoadout skin)
         {
             skin = skin.Sanitized();
             Current = skin;
+            _applied = true;
             if (renderers == null || renderers.Length == 0) renderers = GetComponentsInChildren<Renderer>(true);
             if (_block == null) _block = new MaterialPropertyBlock();
 

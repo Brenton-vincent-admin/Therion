@@ -24,6 +24,17 @@ adds content, variants, skins, stealth, abilities and wild AI.
 2. **Dino > Species > Generate Skin Pattern Masks**: writes the shared pattern `Texture2DArray` (procedural, no license).
 3. Window > General > Test Runner > EditMode > run `Dino.Species.Tests`.
 
+## Turning model files into prefabs
+
+Models live in `Assets/_Game/Art/Dinos/<id>/` (`<id>.fbx`, `<id>_Albedo.png`, `<id>_Normal.png`, `<id>_Mask.png`).
+Run **Dino > Species > Build Dino Prefabs From Models**. For each folder it sets the import settings, builds the skin
+material and the Animator Controller, saves `Assets/_Game/Prefabs/Dinos/<id>.prefab` (LOD group + `DinoSkin`) and
+assigns it to `Species_<id>.modelPrefab`. Re-run it whenever a model changes, then commit the generated files.
+
+Animator parameters: float `Speed` (0..1 of run speed), bools `Grounded`, `Swimming`, `Sneaking`, `Fainted`, `Resting`,
+triggers `Jump`, `Attack`, `Ability`, `Eat`, `Drink`, `Hurt`. Clips: Idle, Walk, Run, Rest (loops) and Attack, Ability,
+Eat, Drink, Hurt, Faint.
+
 ## Hooking up a dino prefab
 
 Player dino: GameSession adds `DinoStealth` (isPlayer) and `SignatureAbilityRunner` automatically. The runner fires on
