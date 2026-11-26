@@ -16,12 +16,16 @@ namespace Dino.UI
     {
         public event Action<SpeciesDefinition> SpeciesChosen;
         public event Action<GameMode> ModeChanged;
+        /// <summary>Parent/testing: the "all dinos" switch was flipped (tap the corner button 3 times).</summary>
+        public event Action<bool> UnlockAllChanged;
 
         Canvas _canvas;
         RectTransform _grid;
         Text _modeText, _header;
         readonly List<GameObject> _buttons = new List<GameObject>();
         GameMode _mode;
+        SpeciesCatalog _catalog; ProgressionService _progression;
+        Text _unlockAllText; int _unlockTaps; float _lastUnlockTap;
 
         static readonly Color Herb = new Color(0.3f, 0.65f, 0.3f);
         static readonly Color Omni = new Color(0.85f, 0.6f, 0.2f);
@@ -33,7 +37,8 @@ namespace Dino.UI
 
         public void Open(SpeciesCatalog catalog, ProgressionService progression, GameMode mode)
         {
-            _mode = mode;
+            _mode = mode; _catalog = catalog; _progression = progression;
+            RefreshUnlockAll();
             _canvas.gameObject.SetActive(true);
             foreach (var b in _buttons) Destroy(b);
             _buttons.Clear();
@@ -54,7 +59,7 @@ namespace Dino.UI
                 if (!unlocked) c = Color.Lerp(c, Color.gray, 0.75f);
                 int col = i % 5, row = i / 5;
                 var pos = new Vector2(-760 + col * 380, 220 - row * 210);
-                string label = unlocked ? s.displayName : $"{s.displayName}\nLevel {XpCurve.LevelForXp(s.unlockXp)}";
+                string label = unlocked ? (progression.IsEarned(s) ? s.displayName : $"{s.displayName}\n(test)") : $"{s.displayName}\nLevel {XpCurve.LevelForXp(s.unlockXp)}";
                 var species = s;
                 var btn = UiFactory.Button(_grid, s.id, label, new Vector2(0.5f, 0.5f), pos, new Vector2(350, 180), c,
                     unlocked ? () => SpeciesChosen?.Invoke(species) : (Action)null);
@@ -87,7 +92,31 @@ namespace Dino.UI
             UiFactory.Button(bg, "Explorer", "Explorer", bottom, new Vector2(220, 90), new Vector2(300, 100), new Color(0.3f, 0.6f, 0.4f), () => SetMode(GameMode.Explorer));
             var modeRt = UiFactory.Rect("ModeText", bg, bottom, bottom, new Vector2(0.5f, 0.5f), new Vector2(640, 90), new Vector2(560, 100));
             _modeText = UiFactory.Label(modeRt, "", 26, Color.white, TextAnchor.MiddleLeft);
+            // Parent/testing switch, top right. Needs 3 quick taps so a child doesn't flip it by accident.
+            var corner = new Vector2(1, 1);
+            var unlockBtn = UiFactory.Button(bg, "UnlockAll", "", corner, new Vector2(-190, -60), new Vector2(340, 80), new Color(0.2f, 0.25f, 0.3f), OnUnlockAllTap);
+            _unlockAllText = unlockBtn.GetComponentInChildren<Text>();
+            if (_unlockAllText) _unlockAllText.fontSize = 22;
             _canvas.gameObject.SetActive(false);
+        }
+
+        void OnUnlockAllTap()
+        {
+            if (_progression == null) return;
+            _unlockTaps = Time.unscaledTime - _lastUnlockTap < 1.5f ? _unlockTaps + 1 : 1;
+            _lastUnlockTap = Time.unscaledTime;
+            if (_unlockTaps < 3) return;
+            _unlockTaps = 0;
+            _progression.UnlockAll = !_progression.UnlockAll;
+            UnlockAllChanged?.Invoke(_progression.UnlockAll);
+            Open(_catalog, _progression, _mode);
+        }
+
+        void RefreshUnlockAll()
+        {
+            if (_unlockAllText == null) return;
+            bool on = _progression != null && _progression.UnlockAll;
+            _unlockAllText.text = on ? "Parent: all dinos ON\n(tap 3x to turn off)" : "Parent: all dinos\n(tap 3x)";
         }
 
         void SetMode(GameMode m) { _mode = m; RefreshMode(); ModeChanged?.Invoke(m); }

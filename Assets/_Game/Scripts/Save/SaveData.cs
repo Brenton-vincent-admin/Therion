@@ -64,5 +64,7 @@ namespace Dino.Save
         public float lookSensitivity = 0.12f;
         /// <summary>Parent setting: wild predators don't chase the player.</summary>
         public bool friendlyPredators;
+        /// <summary>Parent/testing setting: every species can be picked. XP and real unlocks are untouched.</summary>
+        public bool unlockAllSpecies;
     }
 }

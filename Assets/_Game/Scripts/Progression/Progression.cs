@@ -23,12 +23,19 @@ namespace Dino.Progression
         public int Xp => _profile.lifetimeXp;
         public int Level => XpCurve.LevelForXp(_profile.lifetimeXp);
 
-        public bool IsUnlocked(SpeciesDefinition s) => s != null && (s.isStarter || _profile.lifetimeXp >= s.unlockXp);
+        /// <summary>Parent/testing switch: every species and variant can be picked. Earned unlocks are unaffected.</summary>
+        public bool UnlockAll { get; set; }
+
+        /// <summary>Can the player pick this species right now (earned, or the unlock-all switch is on)?</summary>
+        public bool IsUnlocked(SpeciesDefinition s) => s != null && (UnlockAll || IsEarned(s));
+
+        /// <summary>Unlocked by XP for real, ignoring the unlock-all switch.</summary>
+        public bool IsEarned(SpeciesDefinition s) => s != null && (s.isStarter || _profile.lifetimeXp >= s.unlockXp);
 
         public bool IsVariantUnlocked(SpeciesDefinition s, StatVariant v)
         {
             if (s == null || v == null) return false;
-            return _profile.unlockedVariants.Contains($"{s.id}:{v.id}") || (IsUnlocked(s) && _profile.lifetimeXp >= v.unlockXp);
+            return _profile.unlockedVariants.Contains($"{s.id}:{v.id}") || UnlockAll || (IsEarned(s) && _profile.lifetimeXp >= v.unlockXp);
         }
 
         /// <summary>Adds XP and returns species that became unlocked because of it.</summary>
@@ -42,7 +49,7 @@ namespace Dino.Progression
             if (_catalog == null) return newly;
             foreach (var s in _catalog.species)
             {
-                if (s == null || s.isStarter || !IsUnlocked(s) || _profile.seenUnlocks.Contains(s.id)) continue;
+                if (s == null || s.isStarter || !IsEarned(s) || _profile.seenUnlocks.Contains(s.id)) continue;
                 _profile.seenUnlocks.Add(s.id);
                 newly.Add(s);
                 GameEvents.RaiseUnlocked(s.id);

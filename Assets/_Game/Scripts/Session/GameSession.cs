@@ -51,7 +51,7 @@ namespace Dino.Session
             Instance = this;
             if (catalog == null) catalog = SpeciesCatalog.Load();
             Save = SaveSystem.Load();
-            Progression = new ProgressionService(Save.profile, catalog);
+            Progression = new ProgressionService(Save.profile, catalog) { UnlockAll = Save.settings.unlockAllSpecies };
 
             _router = gameObject.AddComponent<PlayerInputRouter>();
             _cam = SetupCamera();
@@ -64,6 +64,7 @@ namespace Dino.Session
             _select = new GameObject("SpeciesSelect").AddComponent<SpeciesSelectScreen>();
             _select.transform.SetParent(transform, false);
             _select.SpeciesChosen += s => StartNewRun(s, null);
+            _select.UnlockAllChanged += on => { Save.settings.unlockAllSpecies = on; SaveSystem.Save(Save); };
             _select.ModeChanged += m => { Save.settings.mode = m; SaveSystem.Save(Save); };
 
             GameEvents.Ate += OnAte;
