@@ -190,7 +190,7 @@ namespace Dino.World.EditorTools
             var lods = new List<Mesh>();
             if (tris > o.lod0Triangles)
             {
-                var reduced = Reduce(mesh0, foliage, (float)o.lod0Triangles / tris, baseName + "_LOD0");
+                var reduced = Reduce(mesh0, foliage, (float)o.lod0Triangles / tris, baseName + "_LOD0", 2f);
                 Object.DestroyImmediate(mesh0);
                 mesh0 = reduced;
                 tris = TriangleCount(mesh0);
@@ -198,8 +198,10 @@ namespace Dino.World.EditorTools
             lods.Add(mesh0);
             if (tris > 1500)
             {
-                lods.Add(Reduce(mesh0, foliage, 0.35f, baseName + "_LOD1"));
-                if (tris > 6000) lods.Add(Reduce(mesh0, foliage, 0.10f, baseName + "_LOD2"));
+                // Each step is far lighter; leaves grow to keep the crown's shape. The last one is for the horizon.
+                lods.Add(Reduce(mesh0, foliage, 0.28f, baseName + "_LOD1", 2.2f));
+                if (tris > 6000) lods.Add(Reduce(mesh0, foliage, 0.06f, baseName + "_LOD2", 4.5f));
+                if (tris > 20000) lods.Add(Reduce(mesh0, foliage, 0.012f, baseName + "_LOD3", 9f));
             }
 
             var saved = new List<Mesh>();
@@ -207,7 +209,7 @@ namespace Dino.World.EditorTools
 
             var go = new GameObject(baseName);
             var group = go.AddComponent<LODGroup>();
-            float[] heights = saved.Count == 3 ? new[] { 0.30f, 0.10f, 0.012f } : saved.Count == 2 ? new[] { 0.22f, 0.012f } : new[] { 0.012f };
+            float[] heights = saved.Count == 4 ? new[] { 0.30f, 0.12f, 0.04f, 0.008f } : saved.Count == 3 ? new[] { 0.30f, 0.10f, 0.012f } : saved.Count == 2 ? new[] { 0.22f, 0.012f } : new[] { 0.012f };
             var entries = new LOD[saved.Count];
             for (int i = 0; i < saved.Count; i++)
             {
@@ -216,7 +218,7 @@ namespace Dino.World.EditorTools
                 child.AddComponent<MeshFilter>().sharedMesh = saved[i];
                 var mr = child.AddComponent<MeshRenderer>();
                 mr.sharedMaterials = mats;
-                mr.shadowCastingMode = ShadowCastingMode.On;
+                mr.shadowCastingMode = i >= 3 ? ShadowCastingMode.Off : ShadowCastingMode.On;
                 entries[i] = new LOD(heights[i], new Renderer[] { mr });
             }
             group.SetLODs(entries);
@@ -456,7 +458,7 @@ namespace Dino.World.EditorTools
         /// A lighter copy of the mesh. Leaf submeshes lose whole leaves (so the rest keep their shape);
         /// solid submeshes (trunks, rocks) get their vertices snapped to a grid and merged.
         /// </summary>
-        static Mesh Reduce(Mesh src, bool[] foliage, float fraction, string name)
+        static Mesh Reduce(Mesh src, bool[] foliage, float fraction, string name, float maxGrow)
         {
             var v = src.vertices;
             var n = src.normals;
@@ -475,10 +477,16 @@ namespace Dino.World.EditorTools
                 int target = Mathf.Max(12, Mathf.RoundToInt(tris.Length / 3 * fraction));
                 if (s < foliage.Length && foliage[s])
                 {
-                    var thinned = ThinFoliage(v, n, uv, hasN, hasUV, tris, fraction, outV, outN, outUV);
+                    var thinned = ThinFoliage(v, n, uv, hasN, hasUV, tris, fraction, maxGrow, outV, outN, outUV);
                     if (thinned != null) { outTris[s] = thinned; continue; }
                 }
                 int[] reduced = SimplifyWithMeshLod(v, tris, target);
+                if (reduced != null && reduced.Length / 3 > target * 1.6f + 200)
+                {
+                    // The simplifier couldn't get there (loose needles or twigs without an opacity map): thin it like leaves.
+                    var thinned = ThinFoliage(v, n, uv, hasN, hasUV, tris, fraction, maxGrow, outV, outN, outUV);
+                    if (thinned != null) { outTris[s] = thinned; continue; }
+                }
                 if (reduced == null) reduced = ClusterToTarget(v, tris, extent, min, target);
 
                 var remap = new Dictionary<int, int>();
@@ -616,13 +624,13 @@ namespace Dino.World.EditorTools
         /// with far fewer triangles. Works on whole connected pieces (a leaf, a twig) when the mesh has
         /// them, otherwise on single triangles. Appends to the output lists and returns the new triangles.
         /// </summary>
-        static List<int> ThinFoliage(Vector3[] v, Vector3[] n, Vector2[] uv, bool hasN, bool hasUV, int[] tris, float fraction,
+        static List<int> ThinFoliage(Vector3[] v, Vector3[] n, Vector2[] uv, bool hasN, bool hasUV, int[] tris, float fraction, float maxGrow,
             List<Vector3> outV, List<Vector3> outN, List<Vector2> outUV)
         {
             int triCount = tris.Length / 3;
             if (triCount < 4) return null;
             fraction = Mathf.Clamp(fraction, 0.01f, 1f);
-            float grow = Mathf.Clamp(1f / Mathf.Sqrt(fraction), 1f, 3.2f);
+            float grow = Mathf.Clamp(1f / Mathf.Sqrt(fraction), 1f, maxGrow);
             var result = new List<int>((int)(tris.Length * fraction) + 3);
 
             // Connected pieces by shared vertices.

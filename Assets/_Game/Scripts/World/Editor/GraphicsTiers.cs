@@ -131,7 +131,7 @@ namespace Dino.World.EditorTools
                 }
 
                 var fso = new SerializedObject(feature);
-                SetFloat(fso, "m_Settings.Intensity", 1.1f, quiet: true);
+                SetFloat(fso, "m_Settings.Intensity", 0.7f, quiet: true);
                 SetFloat(fso, "m_Settings.Radius", 0.7f, quiet: true);
                 SetFloat(fso, "m_Settings.DirectLightingStrength", 0.35f, quiet: true);
                 SetInt(fso, "m_Settings.Source", 0, quiet: true); // depth: works with every shader

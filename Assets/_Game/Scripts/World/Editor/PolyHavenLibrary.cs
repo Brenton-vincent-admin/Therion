@@ -62,11 +62,11 @@ namespace Dino.World.EditorTools
         static readonly Slot[] Slots =
         {
             new Slot { kind = WorldPropKind.Tree, ids = new[] { "island_tree_01", "island_tree_02", "jacaranda_tree", "tree_small_02" },
-                searchAny = new[] { "tree" }, searchNone = NotOutdoor, assets = 2, min = 8f, max = 14f, wind = true, lod0 = 110000 },
+                searchAny = new[] { "tree" }, searchNone = NotOutdoor, assets = 2, min = 8f, max = 14f, wind = true, lod0 = 60000 },
             new Slot { kind = WorldPropKind.Pine, ids = new[] { "fir_tree_01", "pine_tree_01", "fir_sapling_medium", "fir_sapling" },
                 searchAny = new[] { "fir", "pine", "conifer" }, searchNone = NotOutdoor, assets = 1, min = 9f, max = 15f, wind = true, lod0 = 250000 },
             new Slot { kind = WorldPropKind.SwampTree, ids = new[] { "island_tree_03", "island_tree_02", "jacaranda_tree" },
-                searchAny = new[] { "tree" }, searchNone = NotOutdoor, assets = 1, min = 8f, max = 13f, wind = true, lod0 = 110000 },
+                searchAny = new[] { "tree" }, searchNone = NotOutdoor, assets = 1, min = 8f, max = 13f, wind = true, lod0 = 60000 },
             new Slot { kind = WorldPropKind.Rock, ids = new[] { "boulder_01", "rock_moss_set_01", "rock_moss_set_02", "namaqualand_boulder_02", "rock_07", "rock_09", "coast_rocks_01" },
                 searchAny = new[] { "boulder", "rock" }, searchNone = new[] { "wall", "brick", "cliff", "face" }, assets = 3, variantsPerAsset = 3,
                 min = 1.3f, max = 3.2f, byLongest = true, sink = 0.14f, lod0 = 12000 },
@@ -83,9 +83,9 @@ namespace Dino.World.EditorTools
                 searchAny = new[] { "fern", "weed", "nettle" }, searchNone = NotOutdoor, assets = 2, variantsPerAsset = 2,
                 min = 0.55f, max = 0.95f, wind = true, collider = false, lod0 = 12000 },
             new Slot { kind = WorldPropKind.TallLeafTree, ids = new[] { "jacaranda_tree", "island_tree_01", "island_tree_02" },
-                searchAny = new[] { "tree" }, searchNone = NotOutdoor, assets = 1, min = 11f, max = 14f, wind = true, lod0 = 110000 },
+                searchAny = new[] { "tree" }, searchNone = NotOutdoor, assets = 1, min = 11f, max = 14f, wind = true, lod0 = 60000 },
             new Slot { kind = WorldPropKind.GreatTree, ids = new[] { "island_tree_01", "jacaranda_tree", "island_tree_02" },
-                searchAny = new[] { "tree" }, searchNone = NotOutdoor, assets = 1, min = 30f, max = 34f, wind = true, lod0 = 300000 },
+                searchAny = new[] { "tree" }, searchNone = NotOutdoor, assets = 1, min = 30f, max = 34f, wind = true, lod0 = 150000 },
         };
 
         static readonly List<string> Credits = new List<string>();
@@ -259,7 +259,12 @@ namespace Dino.World.EditorTools
                 {
                     Step($"Ground: {layer} ({id})", 0.06f + 0.14f * i / Ground.Length);
                     tl = GroundLayer(folder, layer, tile, id, art);
-                    if (tl) { Credits.Add($"Ground {layer}: {id} https://polyhaven.com/a/{id}"); report.AppendLine($"Ground {layer}: {id}"); break; }
+                    if (tl)
+                    {
+                        Credits.Add($"Ground {layer}: {id} https://polyhaven.com/a/{id}");
+                        report.AppendLine($"Ground {layer}: {id}, texture {(tl.diffuseTexture ? tl.diffuseTexture.name : "none")}, mask map {(tl.maskMapTexture ? "yes" : "no")}");
+                        break;
+                    }
                 }
                 if (!tl) { report.AppendLine($"Ground {layer}: nothing downloaded, keeping the placeholder."); continue; }
                 switch (layer)
@@ -302,9 +307,9 @@ namespace Dino.World.EditorTools
             // living green for grass, warm red-brown for the Red Highlands rock.
             if (layer == "Grass" || layer == "Rock")
             {
-                string tinted = $"{folder}/{layer}_{id}_diff_tinted.jpg";
-                var target = layer == "Grass" ? new Color(0.21f, 0.30f, 0.09f) : new Color(0.37f, 0.26f, 0.20f);
-                try { if (Recolor(diff, tinted, target, layer == "Grass" ? 0.82f : 0.5f)) diff = tinted; }
+                string tinted = $"{folder}/{layer}_{id}_diff_tinted2.jpg";
+                var target = layer == "Grass" ? new Color(0.23f, 0.30f, 0.11f) : new Color(0.40f, 0.26f, 0.19f);
+                try { if (Recolor(diff, tinted, target, layer == "Grass" ? 0.68f : 0.65f)) diff = tinted; }
                 catch (Exception e) { Debug.LogWarning("[Island] Couldn't recolour the ground photo: " + e.Message); }
             }
 

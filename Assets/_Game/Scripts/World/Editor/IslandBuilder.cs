@@ -246,7 +246,7 @@ namespace Dino.World.EditorTools
                 }
                 // Big soft patches of leaf litter break up the repeating grass photo seen from far away.
                 if (rock < 0.5f && biome != BiomeIds.SwampCode)
-                    mud += 0.55f * IslandNoise.SmoothStep(0.56f, 0.74f, IslandNoise.Fbm(u * 11f, v * 11f, spec.seed + 903, 3));
+                    mud += 0.7f * IslandNoise.SmoothStep(0.50f, 0.62f, IslandNoise.Fbm(u * 11f, v * 11f, spec.seed + 903, 3));
                 float grass = Mathf.Max(0.05f, 1.1f - rock - sand - mud - forest + (patch - 0.5f) * 0.3f);
 
                 weights[0] = grass; weights[1] = sand; weights[2] = mud; weights[3] = rock;
@@ -810,16 +810,16 @@ namespace Dino.World.EditorTools
             sun.color = new Color(1f, 0.955f, 0.87f);
             sun.intensity = photoSky ? 1.35f : 1.3f;
             sun.shadows = LightShadows.Soft;
-            sun.shadowStrength = photoSky ? 1f : 0.85f;
+            sun.shadowStrength = photoSky ? 0.92f : 0.85f;
             sun.shadowBias = 0.6f;
             sun.shadowNormalBias = 0.6f;
 
             RenderSettings.sun = sun;
             RenderSettings.skybox = art.skybox ? art.skybox : ph.skybox;
             RenderSettings.ambientMode = AmbientMode.Trilight;
-            RenderSettings.ambientSkyColor = photoSky ? art.ambientSky : new Color(0.62f, 0.72f, 0.86f);
-            RenderSettings.ambientEquatorColor = photoSky ? art.ambientEquator : new Color(0.52f, 0.56f, 0.52f);
-            RenderSettings.ambientGroundColor = photoSky ? art.ambientGround : new Color(0.30f, 0.27f, 0.22f);
+            RenderSettings.ambientSkyColor = photoSky ? art.ambientSky * 1.3f : new Color(0.62f, 0.72f, 0.86f);
+            RenderSettings.ambientEquatorColor = photoSky ? art.ambientEquator * 1.3f : new Color(0.52f, 0.56f, 0.52f);
+            RenderSettings.ambientGroundColor = photoSky ? art.ambientGround * 1.5f : new Color(0.30f, 0.27f, 0.22f);
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.ExponentialSquared;
             RenderSettings.fogDensity = 0.0012f;
