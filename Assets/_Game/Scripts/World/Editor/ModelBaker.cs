@@ -654,11 +654,62 @@ namespace Dino.World.EditorTools
 
             if (pieces.Count >= 40)
             {
+                // Scanned leaves are often dozens of triangles each. A leaf that is nearly flat is replaced
+                // by one textured rectangle (same picture, 2 triangles), which keeps every leaf on the tree.
+                var members = new Dictionary<int, List<int>>(pieces.Count);
+                var triCountOf = new Dictionary<int, int>(pieces.Count);
+                var seen = new bool[v.Length];
+                for (int i = 0; i < tris.Length; i++)
+                {
+                    int vi = tris[i];
+                    int r = Find(vi);
+                    if (i % 3 == 0) { triCountOf.TryGetValue(r, out int tc); triCountOf[r] = tc + 1; }
+                    if (seen[vi]) continue;
+                    seen[vi] = true;
+                    if (!members.TryGetValue(r, out var list)) members[r] = list = new List<int>(8);
+                    list.Add(vi);
+                }
+                var quads = new Dictionary<int, Vector3[]>();
+                var quadUV = new Dictionary<int, Vector2[]>();
+                var quadNormal = new Dictionary<int, Vector3>();
+                if (hasUV)
+                {
+                    foreach (var kv in members)
+                    {
+                        if (triCountOf[kv.Key] <= 2) continue;
+                        if (FitQuad(v, n, uv, hasN, kv.Value, out var corners, out var cornerUV, out var normal))
+                        {
+                            quads[kv.Key] = corners; quadUV[kv.Key] = cornerUV; quadNormal[kv.Key] = normal;
+                        }
+                    }
+                }
+                long afterQuads = 0;
+                foreach (var kv in triCountOf) afterQuads += quads.ContainsKey(kv.Key) ? 2 : kv.Value;
+                float keep = Mathf.Clamp01(triCount * fraction / Mathf.Max(1f, afterQuads));
+                grow = keep >= 1f ? 1f : Mathf.Clamp(1f / Mathf.Sqrt(keep), 1f, maxGrow);
+
+                foreach (var kv in quads)
+                {
+                    int r = kv.Key;
+                    if (keep < 1f && IslandNoise.Hash01(r, r >> 9, 17) > keep) continue;
+                    var e = pieces[r];
+                    Vector3 center = e.sum / e.count;
+                    int start = outV.Count;
+                    for (int k = 0; k < 4; k++)
+                    {
+                        outV.Add(center + (kv.Value[k] - center) * grow);
+                        if (hasN) outN.Add(quadNormal[r]);
+                        outUV.Add(quadUV[r][k]);
+                    }
+                    result.Add(start); result.Add(start + 1); result.Add(start + 2);
+                    result.Add(start); result.Add(start + 2); result.Add(start + 3);
+                }
                 var remap = new Dictionary<int, int>();
                 for (int i = 0; i + 2 < tris.Length; i += 3)
                 {
                     int r = Find(tris[i]);
-                    if (IslandNoise.Hash01(r, r >> 9, 17) > fraction) continue;
+                    if (quads.ContainsKey(r)) continue;
+                    if (keep < 1f && IslandNoise.Hash01(r, r >> 9, 17) > keep) continue;
                     var e = pieces[r];
                     Vector3 center = e.sum / e.count;
                     for (int k = 0; k < 3; k++)
@@ -695,6 +746,59 @@ namespace Dino.World.EditorTools
                 }
             }
             return result.Count >= 9 ? result : null;
+        }
+
+        /// <summary>
+        /// Fits a flat rectangle to one leaf: finds the straight-line mapping from its texture coordinates to
+        /// its positions, then places the corners of its texture rectangle. False when the piece isn't flat
+        /// enough (a twig with several leaves, a curled frond) and should keep its own triangles.
+        /// </summary>
+        static bool FitQuad(Vector3[] v, Vector3[] n, Vector2[] uv, bool hasN, List<int> verts,
+            out Vector3[] corners, out Vector2[] cornerUV, out Vector3 normal)
+        {
+            corners = null; cornerUV = null; normal = Vector3.up;
+            int count = verts.Count;
+            if (count < 4) return false;
+            double mu = 0, mv = 0, mx = 0, my = 0, mz = 0;
+            float uMin = float.MaxValue, uMax = float.MinValue, vMin = float.MaxValue, vMax = float.MinValue;
+            Vector3 nSum = Vector3.zero;
+            foreach (int i in verts)
+            {
+                mu += uv[i].x; mv += uv[i].y; mx += v[i].x; my += v[i].y; mz += v[i].z;
+                uMin = Mathf.Min(uMin, uv[i].x); uMax = Mathf.Max(uMax, uv[i].x);
+                vMin = Mathf.Min(vMin, uv[i].y); vMax = Mathf.Max(vMax, uv[i].y);
+                if (hasN) nSum += n[i];
+            }
+            mu /= count; mv /= count; mx /= count; my /= count; mz /= count;
+            double suu = 0, suv = 0, svv = 0, sux = 0, suy = 0, suz = 0, svx = 0, svy = 0, svz = 0, spread = 0;
+            foreach (int i in verts)
+            {
+                double du = uv[i].x - mu, dv = uv[i].y - mv, dx = v[i].x - mx, dy = v[i].y - my, dz = v[i].z - mz;
+                suu += du * du; suv += du * dv; svv += dv * dv;
+                sux += du * dx; suy += du * dy; suz += du * dz;
+                svx += dv * dx; svy += dv * dy; svz += dv * dz;
+                spread += dx * dx + dy * dy + dz * dz;
+            }
+            double det = suu * svv - suv * suv;
+            if (det < 1e-14 || det < 1e-6 * suu * svv || spread < 1e-12) return false;
+            // position = mean + A * du + B * dv
+            var A = new Vector3((float)((sux * svv - svx * suv) / det), (float)((suy * svv - svy * suv) / det), (float)((suz * svv - svz * suv) / det));
+            var B = new Vector3((float)((svx * suu - sux * suv) / det), (float)((svy * suu - suy * suv) / det), (float)((svz * suu - suz * suv) / det));
+            var mean = new Vector3((float)mx, (float)my, (float)mz);
+            double error = 0;
+            foreach (int i in verts)
+            {
+                var fit = mean + A * (float)(uv[i].x - mu) + B * (float)(uv[i].y - mv);
+                error += (fit - v[i]).sqrMagnitude;
+            }
+            if (error > 0.08 * spread) return false;
+
+            cornerUV = new[] { new Vector2(uMin, vMin), new Vector2(uMax, vMin), new Vector2(uMax, vMax), new Vector2(uMin, vMax) };
+            corners = new Vector3[4];
+            for (int k = 0; k < 4; k++)
+                corners[k] = mean + A * (float)(cornerUV[k].x - mu) + B * (float)(cornerUV[k].y - mv);
+            normal = hasN && nSum.sqrMagnitude > 1e-8f ? nSum.normalized : Vector3.Cross(A, B).normalized;
+            return true;
         }
 
         // ================= helpers =================
