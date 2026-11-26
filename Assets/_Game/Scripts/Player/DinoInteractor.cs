@@ -24,6 +24,7 @@ namespace Dino.Player
         /// <summary>Kid-readable label for the action button.</summary>
         public string ActionLabel => Kind switch
         {
+            InteractKind.Food when !IsAlive(TargetFood) => "Eat",
             InteractKind.Food => TargetFood.FoodType switch
             {
                 FoodType.Meat => "Eat meat",
@@ -59,6 +60,11 @@ namespace Dino.Player
             _scanTimer -= Time.deltaTime;
             if (_scanTimer <= 0f) { _scanTimer = ScanInterval; Scan(); }
 
+            // A meat pile can vanish between scans (eaten up or timed out).
+            if (!IsAlive(TargetFood)) { TargetFood = null; if (Kind == InteractKind.Food) Scan(); }
+            if (!IsAlive(TargetWater)) { TargetWater = null; if (Kind == InteractKind.Water) Scan(); }
+            if (TargetNest == null && Kind == InteractKind.Nest) Scan();
+
             bool held = _actor.Motor.Input.Action;
             IsEating = held && Kind != InteractKind.None;
             _actor.Animator.SafeBool("Eating", IsEating);
@@ -80,6 +86,7 @@ namespace Dino.Player
             TargetFood = _actor.Stats.Food.IsFull ? null
                 : WorldRegistry.FindNearestFood(pos, reach, sp.EdibleMask, MaxFeedHeight);
             TargetWater = _actor.Stats.Water.IsFull ? null : WorldRegistry.FindNearestWater(pos, reach + 0.5f);
+            if (TargetWater != null && !CanReachWaterSurface(TargetWater, pos)) TargetWater = null;
             TargetNest = Nest.FindWithin(pos);
 
             // Prefer whichever meter is emptier; nests only when nothing else to do.
@@ -90,6 +97,20 @@ namespace Dino.Player
             else if (TargetNest != null) Kind = InteractKind.Nest;
             else Kind = InteractKind.None;
         }
+
+        /// <summary>
+        /// Water volumes are boxes, so dry ground can sit inside a box's outline (a lake's banks).
+        /// Only allow drinking when the water surface is no lower than the dino can bend down to.
+        /// </summary>
+        bool CanReachWaterSurface(IWaterSource water, Vector3 pos)
+        {
+            float surfaceY = water.GetDrinkPoint(pos).y;
+            float bendDown = Mathf.Max(0.4f, _actor.Height * 0.35f);
+            return pos.y - surfaceY <= bendDown;
+        }
+
+        /// <summary>False for null and for Unity objects that were destroyed (an eaten meat pile).</summary>
+        static bool IsAlive(object o) => o is UnityEngine.Object uo ? uo != null : o != null;
 
         void DoBite()
         {

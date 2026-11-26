@@ -21,19 +21,28 @@ namespace Dino.World
         [Tooltip("Optional child (berries, leaves) that scales with how much food is left.")]
         public Transform foodVisual;
 
-        float _remaining;
+        float _remaining = -1f; // -1 = not filled yet
         Vector3 _visualScale = Vector3.one;
+        bool _ready;
 
         public FoodType FoodType => foodType;
         public float FeedHeight => feedHeight;
-        public bool HasFood => _remaining >= 1f;
-        public float Remaining => _remaining;
+        public bool HasFood { get { Ready(); return _remaining >= 1f; } }
+        public float Remaining { get { Ready(); return _remaining; } }
 
-        void Awake()
+        /// <summary>
+        /// Fills the plant on first use rather than in Awake, so code that adds the component and then
+        /// sets capacity or foodVisual (map generators) gets a full plant of the right size.
+        /// </summary>
+        void Ready()
         {
+            if (_ready) return;
+            _ready = true;
             _remaining = capacity;
             if (foodVisual) _visualScale = foodVisual.localScale;
         }
+
+        void Start() => Ready();
 
         void OnEnable() => WorldRegistry.Register(this);
         void OnDisable() => WorldRegistry.Unregister(this);
@@ -49,6 +58,7 @@ namespace Dino.World
 
         public float Bite(float units, GameObject eater)
         {
+            Ready();
             float taken = Mathf.Min(units, _remaining);
             _remaining -= taken;
             UpdateVisual();
@@ -57,6 +67,7 @@ namespace Dino.World
 
         void Update()
         {
+            Ready();
             if (regrowPerMinute <= 0f || _remaining >= capacity) return;
             _remaining = Mathf.Min(capacity, _remaining + regrowPerMinute / 60f * Time.deltaTime);
             UpdateVisual();

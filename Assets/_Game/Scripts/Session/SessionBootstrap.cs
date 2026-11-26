@@ -12,9 +12,16 @@ namespace Dino.Session
     /// </summary>
     public static class SessionBootstrap
     {
+        /// <summary>Set true to stop sessions being created automatically (tests, custom flows).</summary>
+        public static bool Disabled;
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Boot()
         {
+            if (Disabled) return;
+            // Unity's test runner plays in a scene named "InitTestScene..."; tests build their own world
+            // and must never touch the real save file.
+            if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name.StartsWith("InitTestScene")) return;
             if (Object.FindAnyObjectByType<NoAutoSession>() != null) return;
             if (Object.FindAnyObjectByType<GameSession>() != null) return;
 

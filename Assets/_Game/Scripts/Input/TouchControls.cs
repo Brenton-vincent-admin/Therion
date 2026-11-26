@@ -66,7 +66,7 @@ namespace Dino.Input
         {
             _canvas = UiFactory.CreateCanvas("TouchControls", 10);
             _canvas.transform.SetParent(transform, false);
-            var root = _canvas.transform;
+            Transform root = UiFactory.SafeArea(_canvas.transform);
 
             // Look zone first (behind everything), right 55% of the screen.
             var lookRt = UiFactory.Rect("LookZone", root, new Vector2(0.45f, 0f), Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);

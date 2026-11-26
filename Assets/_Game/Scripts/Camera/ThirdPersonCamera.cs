@@ -54,8 +54,14 @@ namespace Dino.CameraRig
             else _sinceLook += Time.deltaTime;
 
             // Swing behind the dino while it walks and the player isn't steering the camera.
-            if (_sinceLook > autoFollowDelay && input.Move.sqrMagnitude > 0.04f)
-                _yaw = Mathf.MoveTowardsAngle(_yaw, target.eulerAngles.y, autoFollowSpeed * Time.deltaTime);
+            // Not while the stick points back toward the camera: following then would flip the controls
+            // every half turn and spin the dino in circles.
+            if (_sinceLook > autoFollowDelay && input.Move.y > 0.2f)
+            {
+                float sideways = Mathf.Abs(input.Move.x);
+                float speed = autoFollowSpeed * Mathf.Lerp(1f, 0.35f, sideways);
+                _yaw = Mathf.MoveTowardsAngle(_yaw, target.eulerAngles.y, speed * Time.deltaTime);
+            }
 
             Apply(1f - Mathf.Exp(-smoothing * Time.deltaTime));
         }

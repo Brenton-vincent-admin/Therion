@@ -68,5 +68,9 @@ Species thread: add fields you need (skins etc.) rather than a parallel class; k
 - `Dino.Player.DinoMotor`: CharacterController movement. Driven each frame by a `Dino.Input.DinoInputState` (Move, Look, Run, Sneak, Jump, Action, Attack, Call, Ability, MoveIsWorldSpace) via `motor.Input = state`. Player input, wild-dino AI and network replicas all drive the same motor.
 - `DinoInteractor` (eat/drink/nest), `DinoGrowth`, `DinoAttack` (player only; wild AI bites in WildDinoBrain), `DinoStatusEffects` (ability hooks the motor reads).
 - `Dino.Session.GameSession`: spawn, faint -> Survival respawn at nest / Hardcore restart, Explorer no drain. `GameSession.Instance`, `Player`, `Mode`, `Save`, `Progression`, event `PlayerSpawned(DinoActor)`. Auto-created in any scene without one (`SessionBootstrap`; add `NoAutoSession` to opt out); builds a test meadow when the scene has no world.
+- Pause: `GameSession.OpenPause()/ClosePause()/IsPaused`, `ReleaseDinoAndPickNew()` (ends the run by choice, XP kept). `PauseStopsTime` should be set false in multiplayer.
+- `SurvivalStats.IsExhausted`: ran until empty; `CanRun` stays false until stamina is back above 25%.
+- UI kit (`Dino.UI`): `UiFactory` (Canvas, SafeArea, Panel, Button, Label), `UiSprites` (rounded panels and icons drawn in code), `UiTheme` (shared colors). Use these for new screens so everything matches.
+- Tests: EditMode in `Assets/_Game/Tests/EditMode`, PlayMode in `Assets/_Game/Tests/PlayMode` (`GameplayLoopTests` plays the loops with real physics). PlayMode tests set `SaveSystem.Folder` to a temp folder and `SessionBootstrap.Disabled = true`; do the same in yours so tests never touch a real save.
 - `Dino.Progression`: `XpCurve.XpForLevel/LevelForXp`, `ProgressionService.AddXp/IsUnlocked/IsVariantUnlocked`, `XpRewards`.
 - `Dino.Save.SaveSystem`: JSON in persistentDataPath, atomic write, autosave + on app pause.

@@ -50,6 +50,8 @@ namespace Dino.Save
         public int stage;
         public float secondsInStage;
         public float health, stamina, food, water;
+        /// <summary>Saved while fainted (so quitting can't dodge a Hardcore faint).</summary>
+        public bool fainted;
         public Vector3 position;
         public float yaw;
         public string nestId;
