@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Dino.Progression; // XpCurve lives in core (same formula we agreed)
 
 namespace Dino.Species
 {
@@ -212,27 +213,6 @@ namespace Dino.Species
         public static float TotalMinutesToAdult(List<GrowthNumbers> stages)
         {
             float t = 0f; foreach (var g in stages) t += g.minutesToGrow; return t;
-        }
-    }
-
-    /// <summary>
-    /// Account XP levels (agreed with the core thread; Dino.Progression.XpCurve uses the same formula).
-    /// L2 = 300, L3 = 700, L4 = 1200, L5 = 1800, L6 = 2500, L8 = 4200, L9 = 5200, L12 = 8800, L15 = 13300.
-    /// </summary>
-    public static class XpCurve
-    {
-        public static int XpForLevel(int level)
-        {
-            if (level <= 1) return 0;
-            int n = level - 1;
-            return 250 * n + 50 * n * n;
-        }
-
-        public static int LevelForXp(int xp)
-        {
-            int level = 1;
-            while (XpForLevel(level + 1) <= xp) level++;
-            return level;
         }
     }
 

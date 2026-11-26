@@ -26,12 +26,11 @@ adds content, variants, skins, stealth, abilities and wild AI.
 
 ## Hooking up a dino prefab
 
-Player dino: core's `DinoActor` + `SurvivalStats` + `DinoMotor` + `DinoStatusEffects`, then add
-`DinoStealth` (tick **isPlayer**) and `SignatureAbilityRunner`. Wire the ability button to
-`SignatureAbilityRunner.TryActivate()` and its cooldown ring to `Readiness`. Put `DinoSkin` on the model root.
+Player dino: GameSession adds `DinoStealth` (isPlayer) and `SignatureAbilityRunner` automatically. The runner fires on
+`DinoInputState.Ability` (the Power button); show its cooldown ring from `Readiness`. Put `DinoSkin` on the model root.
 
 Wild dino prefab: same, but `DinoStealth.isPlayer` off, plus `WildDinoBrain`. Place `WildDinoSpawner`s in each
-biome with a species list. Game session sets `WildDinoSettings.Mode`, `FriendlyPredatorsSetting` and `IsNight`.
+biome with a species list. `WildDinoSettings` reads the mode and the friendly-predators setting from GameSession; the day/night cycle sets `IsNight`.
 
 Map thread: put `CoverVolume` (trigger) on tall grass and shade. Optional: implement `IShoveable` on boulders
 (Trike Lv3) and `IShakeable` on fruit trees (Brachio Lv3).

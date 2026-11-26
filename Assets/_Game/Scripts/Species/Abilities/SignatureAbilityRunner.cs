@@ -188,6 +188,8 @@ namespace Dino.Species
         void Update()
         {
             if (Actor == null || Actor.Species == null) return;
+            // The Power button (DinoInputState.Ability, pressed this frame) from touch, keyboard or network.
+            if (Actor.Motor != null && Actor.Motor.Input.Ability) TryActivate();
             bool active = IsActive;
 
             switch (Ability)

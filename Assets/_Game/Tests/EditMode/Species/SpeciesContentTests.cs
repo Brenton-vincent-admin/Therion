@@ -157,13 +157,13 @@ namespace Dino.Species.Tests
 
         [Test] public void XpCurve()
         {
-            Assert.AreEqual(0, Dino.Species.XpCurve.XpForLevel(1));
-            Assert.AreEqual(300, Dino.Species.XpCurve.XpForLevel(2));
-            Assert.AreEqual(13300, Dino.Species.XpCurve.XpForLevel(15));
+            Assert.AreEqual(0, Dino.Progression.XpCurve.XpForLevel(1));
+            Assert.AreEqual(300, Dino.Progression.XpCurve.XpForLevel(2));
+            Assert.AreEqual(13300, Dino.Progression.XpCurve.XpForLevel(15));
             for (int l = 1; l < 20; l++)
             {
-                Assert.AreEqual(l, Dino.Species.XpCurve.LevelForXp(Dino.Species.XpCurve.XpForLevel(l)));
-                Assert.AreEqual(l, Dino.Species.XpCurve.LevelForXp(Dino.Species.XpCurve.XpForLevel(l + 1) - 1));
+                Assert.AreEqual(l, Dino.Progression.XpCurve.LevelForXp(Dino.Progression.XpCurve.XpForLevel(l)));
+                Assert.AreEqual(l, Dino.Progression.XpCurve.LevelForXp(Dino.Progression.XpCurve.XpForLevel(l + 1) - 1));
             }
             Assert.AreEqual(0, SpeciesTuning.Compute(LaunchRoster.Get("parasaur")).unlockXp);
             Assert.AreEqual(13300, SpeciesTuning.Compute(LaunchRoster.Get("trex")).unlockXp);
