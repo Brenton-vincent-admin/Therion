@@ -385,6 +385,42 @@ CARNO_AI.update({
 CARNO_AI["skin"].update({"accent_points": [((0.29, -2.54, 3.00), 0.15)], "accent_color": (0.13, 0.11, 0.085),
                          "belly_height": (1.5, 2.3), "back": (0.10, 0.072, 0.045), "flank": (0.50, 0.30, 0.10),
                          "belly": (0.72, 0.61, 0.40), "stripe": (0.045, 0.034, 0.026), "ridge": (0.06, 0.045, 0.03)})
+def _widen(spec, f):
+    """Scale a fitted spec sideways by f (used after changing the base mesh's width)."""
+    sx = lambda t: (t[0] * f,) + tuple(t[1:])
+    for p in spec["lofts"]:
+        p["ctrl"] = [(r[0] * f, r[1], r[2], r[3] * f, r[4]) for r in p["ctrl"]]
+    spec["head_ctrl"] = [(r[0], r[1], r[2], r[3] * f, r[4]) for r in spec["head_ctrl"]]
+    spec["jaw_ctrl"] = [(r[0], r[1], r[2], r[3] * f, r[4]) for r in spec["jaw_ctrl"]]
+    for e in spec["ellipsoids"] + spec["cuts"]:
+        e["c"] = sx(e["c"])
+        e["r"] = sx(e["r"])
+    for c in spec["claws"]:
+        c["base"] = sx(c["base"])
+    spec["eye"]["c"] = sx(spec["eye"]["c"])
+    spec["joints"] = {k: sx(v) for k, v in spec["joints"].items()}
+    spec["skin"]["accent_points"] = [(sx(pt), r) for pt, r in spec["skin"]["accent_points"]]
+
+
+# Brenton's notes: a chunky body, a closed mouth with an overbite, black and red hide.
+CARNO_AI["base"]["scale_xz"] = (1.0, 0.84)
+_widen(CARNO_AI, 1.0 / 0.84)
+for _c in CARNO_AI["cuts"]:
+    if _c["name"] == "Mouth":
+        _c["r"] = (_c["r"][0], _c["r"][1], 0.012)
+    if _c["name"] in ("EyeSocket", "Nostril"):      # keep these round
+        _c["r"] = (_c["r"][0] * 0.84, _c["r"][1], _c["r"][2])
+CARNO_AI["lofts"].append({"name": "MouthFill", "with_base": True, "n": 2.4, "segs": 20, "ctrl": [
+    (0, -2.60, 2.531, 0.215, 0.055), (0, -2.80, 2.506, 0.190, 0.052), (0, -3.00, 2.482, 0.148, 0.048),
+    (0, -3.15, 2.463, 0.108, 0.042), (0, -3.25, 2.451, 0.060, 0.032)]})
+CARNO_AI["jaw_rest"] = -1.6
+CARNO_AI["teeth"].update({"upper_count": 15, "upper_len": (0.045, 0.085),
+                          "overbite": {"y0": -3.045, "z0": 2.476, "slope": 0.1228, "lift": 0.018, "inset": 0.012},
+                          "lower_len": (0.015, 0.028), "lower_x": 0.55})
+CARNO_AI["skin"].update({"back": (0.012, 0.010, 0.010), "flank": (0.33, 0.035, 0.025), "belly": (0.20, 0.07, 0.055),
+                         "stripe": (0.008, 0.007, 0.007), "ridge": (0.010, 0.009, 0.009),
+                         "accent_color": (0.035, 0.03, 0.028), "stripe_strength": 0.95})
+
 CARNO_AI["views"] = {
     "hero": dict(target=(0, 0.5, 1.6), dist=10.3, az=-38, el=9, lens=50),
     "side": dict(target=(0, 0.7, 1.55), dist=11.2, az=-90, el=4, lens=50),

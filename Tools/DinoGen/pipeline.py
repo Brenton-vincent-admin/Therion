@@ -479,6 +479,12 @@ class Animator:
                 q = (R.inverted() @ D @ R).to_quaternion()
             pb.rotation_quaternion = q
             pb.location = (0, 0, 0)
+        jr = self.spec.get("jaw_rest", 0.0)      # closes a mouth that is modelled slightly open
+        if jr:
+            jb = rig.pose.bones["Jaw"]
+            R = self.rest["Jaw"]
+            jq = (R.inverted() @ Matrix.Rotation(math.radians(jr), 3, 'X') @ R).to_quaternion()
+            jb.rotation_quaternion = jq @ jb.rotation_quaternion
         hips = rig.pose.bones["Hips"]
         hips.location = self.rest["Hips"].inverted() @ (Vector(pose.get("hips", (0, 0, 0))) * self.ks)
         for side in ("L", "R"):

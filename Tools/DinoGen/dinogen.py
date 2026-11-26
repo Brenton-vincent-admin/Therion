@@ -412,6 +412,15 @@ def build_accessories(spec, high=None):
         size *= 0.85 + 0.3 * ((i * 7919) % 5) / 4
         for sx in (1, -1):
             x = sx * T["upper_x"] * c[3]
+            ob_ = T.get("overbite")
+            if ob_:     # teeth sit on the outer lip and hang down over the lower jaw
+                zc = ob_["z0"] + (y - ob_["y0"]) * ob_["slope"] + ob_.get("lift", 0.02)
+                hit = cast((sx * 1.5, y, zc), (-sx, 0, 0), 1.5)
+                if not hit or abs(hit.x) < 0.02:
+                    continue
+                base = (hit.x - sx * ob_.get("inset", 0.012), y, zc)
+                cone(bm, base, (sx * 0.04, 0.06, -1), size, size * 0.30, hook=0.15, hook_dir=(0, 1, 0))
+                continue
             hit = cast((x, y, c[2]), (0, 0, -1), c[4] * 1.3)
             base = (x, y, (hit.z + 0.025) if hit else c[2] - T["upper_z"] * c[4])
             cone(bm, base, (sx * 0.02, 0.10, -1), size + 0.025, size * 0.33, hook=0.18, hook_dir=(0, 1, 0))
