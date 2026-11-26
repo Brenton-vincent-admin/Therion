@@ -139,6 +139,13 @@ def generate(res=RES):
     vx, vy, vr, vh = VOLCANO
     dv = np.hypot(U - vx, V - vy)
     H = H + np.clip(1 - dv / vr, 0, 1) ** 1.6 * vh - np.clip(1 - dv / 0.022, 0, 1) ** 0.8 * 35.0
+    # lava gullies and rough rock on the cone (same as IslandGenerator.cs)
+    cone = np.clip(1 - dv / vr, 0, 1)
+    mid = cone * (1 - cone) * 4
+    ang = np.arctan2(V - vy, U - vx)
+    around = fbm(np.cos(ang) * 6 + 10, np.sin(ang) * 6 + 10, SEED + 61, 3)
+    gully = 1 - np.minimum(1, np.abs(around - 0.5) * 5)
+    H = H - gully * gully * 13 * mid + (fbm(U * 70, V * 70, SEED + 63, 3) - 0.5) * 9 * mid
 
     # 5. lake
     lw = ((U - LAKE[0]) / LAKE[2]) ** 2 + ((V - LAKE[1]) / LAKE[3]) ** 2 + 0.35 * (fbm(U * 10, V * 10, SEED + 29) - 0.5)

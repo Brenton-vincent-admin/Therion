@@ -86,6 +86,17 @@ namespace Dino.World.Generation
                     float dv = Mathf.Sqrt(dvx * dvx + dvy * dvy);
                     h += Mathf.Pow(Mathf.Clamp01(1f - dv / spec.volcanoRadius), 1.6f) * spec.volcanoHeight;
                     h -= Mathf.Pow(Mathf.Clamp01(1f - dv / spec.craterRadius), 0.8f) * spec.craterDepth;
+                    // Lava gullies running down the cone and rough rock, strongest mid-slope, so it isn't a smooth cone.
+                    float cone = Mathf.Clamp01(1f - dv / spec.volcanoRadius);
+                    if (cone > 0f)
+                    {
+                        float mid = cone * (1f - cone) * 4f;
+                        float ang = Mathf.Atan2(dvy, dvx);
+                        float around = Fbm(Mathf.Cos(ang) * 6f + 10f, Mathf.Sin(ang) * 6f + 10f, seed + 61, 3);
+                        float gully = 1f - Mathf.Min(1f, Mathf.Abs(around - 0.5f) * 5f);
+                        h -= gully * gully * 13f * mid;
+                        h += (Fbm(u * 70f, v * 70f, seed + 63, 3) - 0.5f) * 9f * mid;
+                    }
 
                     float lx = (u - spec.lakeCenter.x) / spec.lakeRadii.x, ly = (v - spec.lakeCenter.y) / spec.lakeRadii.y;
                     float lw = lx * lx + ly * ly + 0.35f * (Fbm(u * 10f, v * 10f, seed + 29) - 0.5f);

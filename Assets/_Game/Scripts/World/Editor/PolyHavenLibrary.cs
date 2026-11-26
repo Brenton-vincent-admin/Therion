@@ -298,6 +298,16 @@ namespace Dino.World.EditorTools
             bool haveMask = File.Exists(mask) || BuildMask(arm, disp, mask);
             try { average = AverageColor(diff); } catch (Exception) { }
 
+            // The free "grass" photos are all dry and beige, so the detail is kept and the colour shifted:
+            // living green for grass, warm red-brown for the Red Highlands rock.
+            if (layer == "Grass" || layer == "Rock")
+            {
+                string tinted = $"{folder}/{layer}_{id}_diff_tinted.jpg";
+                var target = layer == "Grass" ? new Color(0.21f, 0.30f, 0.09f) : new Color(0.37f, 0.26f, 0.20f);
+                try { if (Recolor(diff, tinted, target, layer == "Grass" ? 0.82f : 0.5f)) diff = tinted; }
+                catch (Exception e) { Debug.LogWarning("[Island] Couldn't recolour the ground photo: " + e.Message); }
+            }
+
             AssetDatabase.ImportAsset(diff, ImportAssetOptions.ForceUpdate);
             ConfigureTexture(diff, TextureImporterType.Default, true, 2048);
             Texture2D normalTex = null, maskTex = null;
@@ -335,13 +345,42 @@ namespace Dino.World.EditorTools
             if (layer == "Grass")
             {
                 // Grass blades take their colour from the ground photo so the two blend together.
-                // Always a living green, however pale the photo is; only the exact hue follows it.
-                Color.RGBToHSV(average, out float h, out float s, out float v);
-                h = Mathf.Clamp(h, 0.23f, 0.32f);
-                art.grassRoot = Color.HSVToRGB(h + 0.01f, Mathf.Clamp(s * 1.3f, 0.60f, 0.85f), Mathf.Clamp(v * 0.6f, 0.10f, 0.17f));
-                art.grassTip = Color.HSVToRGB(h - 0.02f, Mathf.Clamp(s * 1.2f, 0.58f, 0.78f), Mathf.Clamp(v * 1.15f, 0.30f, 0.42f));
+                art.grassRoot = new Color(0.07f, 0.13f, 0.03f);
+                art.grassTip = new Color(0.27f, 0.40f, 0.10f);
             }
             return tl;
+        }
+
+        /// <summary>Writes a copy of the photo with its colour moved toward 'target' (light and dark detail kept).</summary>
+        static bool Recolor(string source, string destination, Color target, float amount)
+        {
+            if (File.Exists(destination)) return true;
+            var t = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+            try
+            {
+                if (!t.LoadImage(File.ReadAllBytes(source))) return false;
+                var px = t.GetPixels32();
+                double sum = 0;
+                for (int i = 0; i < px.Length; i += 13) sum += 0.30 * px[i].r + 0.59 * px[i].g + 0.11 * px[i].b;
+                float averageLum = Mathf.Max(1f, (float)(sum / ((px.Length + 12) / 13)));
+                float targetLum = (0.30f * target.r + 0.59f * target.g + 0.11f * target.b) * 255f;
+                float keep = targetLum / averageLum;
+                for (int i = 0; i < px.Length; i++)
+                {
+                    var p = px[i];
+                    float lum = 0.30f * p.r + 0.59f * p.g + 0.11f * p.b;
+                    float rel = Mathf.Min(2.4f, lum / averageLum);
+                    float r = Mathf.Lerp(p.r * keep, target.r * 255f * rel, amount);
+                    float g = Mathf.Lerp(p.g * keep, target.g * 255f * rel, amount);
+                    float b = Mathf.Lerp(p.b * keep, target.b * 255f * rel, amount);
+                    px[i] = new Color32((byte)Mathf.Clamp(r, 0f, 255f), (byte)Mathf.Clamp(g, 0f, 255f), (byte)Mathf.Clamp(b, 0f, 255f), 255);
+                }
+                t.SetPixels32(px);
+                t.Apply();
+                File.WriteAllBytes(destination, t.EncodeToJPG(92));
+                return true;
+            }
+            finally { Object.DestroyImmediate(t); }
         }
 
         /// <summary>Terrain mask map: R metallic (0), G ambient occlusion, B height, A smoothness.</summary>

@@ -284,7 +284,13 @@ namespace Dino.World.EditorTools
                 else if (AssetImporter.GetAtPath(basePath) is TextureImporter ti && ti.DoesSourceTextureHaveAlpha())
                 {
                     hasAlpha = true;
-                    if (!ti.alphaIsTransparency) { ti.alphaIsTransparency = true; ti.SaveAndReimport(); }
+                    if (!ti.alphaIsTransparency || !ti.mipMapsPreserveCoverage)
+                {
+                    ti.alphaIsTransparency = true;
+                    ti.mipMapsPreserveCoverage = true; // leaves keep their size in the distance instead of fading away
+                    ti.alphaTestReferenceValue = 0.35f;
+                    ti.SaveAndReimport();
+                }
                 }
             }
             string normalPath = normalTex ? AssetDatabase.GetAssetPath(normalTex) : null;
@@ -427,6 +433,8 @@ namespace Dino.World.EditorTools
             if (AssetImporter.GetAtPath(outPath) is TextureImporter imp)
             {
                 imp.alphaIsTransparency = true;
+                imp.mipMapsPreserveCoverage = true;
+                imp.alphaTestReferenceValue = 0.35f;
                 imp.maxTextureSize = 2048;
                 imp.SaveAndReimport();
             }
@@ -465,9 +473,12 @@ namespace Dino.World.EditorTools
             {
                 var tris = src.GetTriangles(s);
                 int target = Mathf.Max(12, Mathf.RoundToInt(tris.Length / 3 * fraction));
-                int[] reduced = null;
-                if (s < foliage.Length && foliage[s]) reduced = DropIslands(v, tris, fraction, extent, min);
-                if (reduced == null) reduced = SimplifyWithMeshLod(v, tris, target);
+                if (s < foliage.Length && foliage[s])
+                {
+                    var thinned = ThinFoliage(v, n, uv, hasN, hasUV, tris, fraction, outV, outN, outUV);
+                    if (thinned != null) { outTris[s] = thinned; continue; }
+                }
+                int[] reduced = SimplifyWithMeshLod(v, tris, target);
                 if (reduced == null) reduced = ClusterToTarget(v, tris, extent, min, target);
 
                 var remap = new Dictionary<int, int>();
@@ -600,39 +611,82 @@ namespace Dino.World.EditorTools
             return index;
         }
 
-        /// <summary>Keeps a fraction of the connected pieces (leaves, twigs). Null when the mesh is one big piece.</summary>
-        static int[] DropIslands(Vector3[] v, int[] tris, float fraction, float extent, Vector3 min)
+        /// <summary>
+        /// Keeps a fraction of the leaves and enlarges the ones that stay, so the crown looks just as full
+        /// with far fewer triangles. Works on whole connected pieces (a leaf, a twig) when the mesh has
+        /// them, otherwise on single triangles. Appends to the output lists and returns the new triangles.
+        /// </summary>
+        static List<int> ThinFoliage(Vector3[] v, Vector3[] n, Vector2[] uv, bool hasN, bool hasUV, int[] tris, float fraction,
+            List<Vector3> outV, List<Vector3> outN, List<Vector2> outUV)
         {
-            float cell = extent * 0.0002f;
-            var weld = new Dictionary<long, int>();
-            var id = new int[tris.Length];
-            var parent = new List<int>();
-            for (int i = 0; i < tris.Length; i++)
-            {
-                long key = CellKey(v[tris[i]], min, cell);
-                if (!weld.TryGetValue(key, out int w)) { w = parent.Count; weld[key] = w; parent.Add(w); }
-                id[i] = w;
-            }
+            int triCount = tris.Length / 3;
+            if (triCount < 4) return null;
+            fraction = Mathf.Clamp(fraction, 0.01f, 1f);
+            float grow = Mathf.Clamp(1f / Mathf.Sqrt(fraction), 1f, 3.2f);
+            var result = new List<int>((int)(tris.Length * fraction) + 3);
+
+            // Connected pieces by shared vertices.
+            var parent = new int[v.Length];
+            for (int i = 0; i < parent.Length; i++) parent[i] = i;
             int Find(int x) { while (parent[x] != x) { parent[x] = parent[parent[x]]; x = parent[x]; } return x; }
             for (int i = 0; i + 2 < tris.Length; i += 3)
             {
-                int a = Find(id[i]), b = Find(id[i + 1]), c = Find(id[i + 2]);
+                int a = Find(tris[i]), b = Find(tris[i + 1]), c = Find(tris[i + 2]);
                 if (b != a) parent[b] = a;
                 c = Find(c);
                 if (c != a) parent[c] = a;
             }
-            var roots = new HashSet<int>();
-            for (int i = 0; i + 2 < tris.Length; i += 3) roots.Add(Find(id[i]));
-            if (roots.Count < 24) return null;
-
-            var kept = new List<int>((int)(tris.Length * fraction) + 3);
-            for (int i = 0; i + 2 < tris.Length; i += 3)
+            var pieces = new Dictionary<int, (Vector3 sum, int count)>();
+            for (int i = 0; i < tris.Length; i++)
             {
-                int r = Find(id[i]);
-                if (IslandNoise.Hash01(r, r >> 7, 17) > fraction) continue;
-                kept.Add(tris[i]); kept.Add(tris[i + 1]); kept.Add(tris[i + 2]);
+                int r = Find(tris[i]);
+                pieces.TryGetValue(r, out var e);
+                pieces[r] = (e.sum + v[tris[i]], e.count + 1);
             }
-            return kept.Count >= 9 ? kept.ToArray() : null;
+
+            if (pieces.Count >= 40)
+            {
+                var remap = new Dictionary<int, int>();
+                for (int i = 0; i + 2 < tris.Length; i += 3)
+                {
+                    int r = Find(tris[i]);
+                    if (IslandNoise.Hash01(r, r >> 9, 17) > fraction) continue;
+                    var e = pieces[r];
+                    Vector3 center = e.sum / e.count;
+                    for (int k = 0; k < 3; k++)
+                    {
+                        int old = tris[i + k];
+                        if (!remap.TryGetValue(old, out int idx))
+                        {
+                            idx = outV.Count;
+                            remap[old] = idx;
+                            outV.Add(center + (v[old] - center) * grow);
+                            if (hasN) outN.Add(n[old]);
+                            if (hasUV) outUV.Add(uv[old]);
+                        }
+                        result.Add(idx);
+                    }
+                }
+            }
+            else
+            {
+                // One welded mass (typical for needles): drop single triangles and enlarge the rest.
+                for (int i = 0; i + 2 < tris.Length; i += 3)
+                {
+                    int t = i / 3;
+                    if (IslandNoise.Hash01(t, t >> 9, 19) > fraction) continue;
+                    Vector3 center = (v[tris[i]] + v[tris[i + 1]] + v[tris[i + 2]]) / 3f;
+                    for (int k = 0; k < 3; k++)
+                    {
+                        int old = tris[i + k];
+                        result.Add(outV.Count);
+                        outV.Add(center + (v[old] - center) * grow);
+                        if (hasN) outN.Add(n[old]);
+                        if (hasUV) outUV.Add(uv[old]);
+                    }
+                }
+            }
+            return result.Count >= 9 ? result : null;
         }
 
         // ================= helpers =================

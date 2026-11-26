@@ -270,7 +270,7 @@ namespace Dino.World.EditorTools
                 var rp = level.FindPropertyRelative("customRenderPipeline");
                 if (rp != null) rp.objectReferenceValue = assets[tier];
                 SetRelFloat(level, "lodBias", tier == 2 ? 2f : tier == 1 ? 1f : 0.7f);
-                SetRelInt(level, "maximumLODLevel", tier == 0 ? 1 : 0);
+                SetRelInt(level, "maximumLODLevel", tier == 2 ? 0 : 1); // phones skip the most detailed tree meshes
                 SetRelInt(level, "anisotropicTextures", tier == 2 ? 2 : tier == 1 ? 1 : 0);
                 SetRelInt(level, "realtimeReflectionProbes", tier == 2 ? 1 : 0);
                 SetRelInt(level, "vSyncCount", tier == 2 ? 1 : 0);
