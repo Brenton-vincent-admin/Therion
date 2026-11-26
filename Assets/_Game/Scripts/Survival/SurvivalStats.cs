@@ -124,9 +124,16 @@ namespace Dino.Survival
 
         public void Heal(float amount) { if (!IsFainted) Health.Add(amount); }
 
+        /// <summary>
+        /// Raised instead of applying damage when SimulateLocally is false (a network replica was bitten).
+        /// The net layer forwards it to the phone that owns this dino.
+        /// </summary>
+        public event Action<DamageInfo> RemoteDamageRequested;
+
         public void TakeDamage(DamageInfo info)
         {
-            if (IsFainted || !SimulateLocally) return;
+            if (IsFainted) return;
+            if (!SimulateLocally) { RemoteDamageRequested?.Invoke(info); return; }
             if (NoDrain) return; // Explorer mode: nobody gets hurt
             ApplyDamage(info);
             OnDamaged?.Invoke(info);

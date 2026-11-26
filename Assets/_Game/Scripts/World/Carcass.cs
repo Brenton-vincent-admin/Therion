@@ -7,7 +7,7 @@ namespace Dino.World
     /// A cartoon meat pile left when a wild dino is defeated. Never shows a body or gore.
     /// Disappears when eaten or after 'lifetimeSeconds'.
     /// </summary>
-    public class Carcass : MonoBehaviour, IFoodSource
+    public class Carcass : MonoBehaviour, IFoodSource, INetSyncedFood
     {
         public float meat = 100f;
         public float lifetimeSeconds = 300f;
@@ -49,6 +49,13 @@ namespace Dino.World
             }
             if (meat < 1f) Destroy(gameObject);
             return taken;
+        }
+
+        public void NetSetRemaining(float remaining)
+        {
+            meat = Mathf.Max(0f, remaining);
+            if (visual) visual.localScale = _scale * Mathf.Lerp(0.3f, 1f, meat / _start);
+            if (meat < 1f) Destroy(gameObject);
         }
 
         void Update()
