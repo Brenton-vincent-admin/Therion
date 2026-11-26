@@ -47,6 +47,7 @@ namespace Dino.EditorTools
             Set(PlayerSettings.allowedAutorotateToPortraitUpsideDown, false, v => PlayerSettings.allowedAutorotateToPortraitUpsideDown = v);
             Set(PlayerSettings.allowedAutorotateToLandscapeLeft, true, v => PlayerSettings.allowedAutorotateToLandscapeLeft = v);
             Set(PlayerSettings.allowedAutorotateToLandscapeRight, true, v => PlayerSettings.allowedAutorotateToLandscapeRight = v);
+            changed |= EnsureInputHandlerBoth();
             // Kid safety: no internet permission is requested unless multiplayer code needs it (the Net thread decides).
 
             if (changed)
@@ -55,6 +56,27 @@ namespace Dino.EditorTools
                 Debug.Log($"[Dino] Project settings applied: {GameInfo.ProductName} ({GameInfo.AndroidPackageId}). Commit ProjectSettings/ProjectSettings.asset.");
             }
             else if (log) Debug.Log("[Dino] Project settings already up to date.");
+        }
+
+        /// <summary>
+        /// Sets Player Settings > Active Input Handling to "Both" (2): the Input System package for
+        /// touch/gamepad plus the old manager for anything legacy. Takes effect after an editor restart.
+        /// </summary>
+        static bool EnsureInputHandlerBoth()
+        {
+            var assets = AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/ProjectSettings.asset");
+            if (assets == null || assets.Length == 0) return false;
+            var so = new SerializedObject(assets[0]);
+            var prop = so.FindProperty("activeInputHandler");
+            if (prop == null || prop.intValue == 2) return false;
+            prop.intValue = 2;
+            so.ApplyModifiedPropertiesWithoutUndo();
+            if (!Application.isBatchMode &&
+                EditorUtility.DisplayDialog("Therion setup",
+                    "Input handling was switched to \"Both\" so touch and controller input work. Unity needs to restart once.",
+                    "Restart now", "Later"))
+                EditorApplication.OpenProject(System.IO.Directory.GetCurrentDirectory());
+            return true;
         }
     }
 }

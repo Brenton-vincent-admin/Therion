@@ -3,7 +3,7 @@
 Status: live on main. Changes to these contracts go through a PR touching this file.
 
 ## Basics
-- Unity **6000.0.58f2** (Unity 6.0 LTS). URP, Input System, Netcode for GameObjects 2.x, Multiplayer Services (already in Packages/manifest.json).
+- Unity **6000.6.10f1** (what Brenton has installed). URP, Input System, Netcode for GameObjects 2.x, Multiplayer Services (already in Packages/manifest.json).
 - Root namespace **`Dino`** (not the game name, so a rename never touches code). Product name, company and Android
   package id live only in `Dino.Core.GameInfo` (Assets/_Game/Scripts/Core/GameInfo.cs). Package id is a placeholder
   `com.brenton.therion` (final, never change). Game name: Therion. Repo: Brenton-vincent-admin/therion.
