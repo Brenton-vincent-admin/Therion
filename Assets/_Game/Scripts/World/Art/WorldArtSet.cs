@@ -42,6 +42,20 @@ namespace Dino.World
         public Material ocean;
         public Material skybox;
 
+        [Header("Lighting matched to the sky (filled in by the Poly Haven downloader)")]
+        [Tooltip("True when the values below were measured from the sky picture.")]
+        public bool hasSkyLighting;
+        [Tooltip("Direction pointing from the ground toward the sun in the sky picture.")]
+        public Vector3 sunDirection = new Vector3(0.4f, 0.75f, -0.5f);
+        public Color ambientSky = new Color(0.62f, 0.72f, 0.86f);
+        public Color ambientEquator = new Color(0.52f, 0.56f, 0.52f);
+        public Color ambientGround = new Color(0.30f, 0.27f, 0.22f);
+        public Color fogColor = new Color(0.70f, 0.77f, 0.84f);
+
+        [Header("Grass colour (matched to the ground texture by the downloader)")]
+        public Color grassRoot = new Color(0.10f, 0.15f, 0.05f);
+        public Color grassTip = new Color(0.34f, 0.46f, 0.14f);
+
         public GameObject PickPrefab(Generation.WorldPropKind kind, int index)
         {
             foreach (var p in props)

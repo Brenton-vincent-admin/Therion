@@ -26,7 +26,7 @@ namespace Dino.World.EditorTools
         public const string ArtSetPath = WorldRoot + "/Art/WorldArtSet.asset";
 
         const int AlphamapResolution = 512;
-        const int DetailResolution = 512;
+        const int DetailResolution = 1024;
         const int BiomeMapResolution = 256;
         const float WaterMeshTile = 256f;
 
@@ -73,6 +73,8 @@ namespace Dino.World.EditorTools
             var clock = Stopwatch.StartNew();
             try
             {
+                Progress("Graphics settings", 0.02f);
+                GraphicsTiers.EnsureSetUp();
                 Progress("Generating terrain shape", 0.05f);
                 var data = IslandGenerator.Generate(spec);
                 Progress("Placing nests, water and food", 0.25f);
@@ -97,12 +99,17 @@ namespace Dino.World.EditorTools
                 BuildWater(spec, data, art, ph, root.transform);
 
                 Progress("Placing food, nests and landmarks", 0.8f);
-                BuildProps(spec, data, art, ph, root.transform);
+                var foodCuller = BuildProps(spec, data, art, ph, root.transform);
                 BuildLandmarks(spec, data, root.transform);
 
                 Progress("Lighting and atmosphere", 0.9f);
                 BuildAtmosphere(art, ph, root.transform);
                 BuildPreviewCamera(spec, data);
+
+                var tier = root.AddComponent<WorldQualityTier>();
+                tier.terrain = terrain;
+                tier.cullers = new[] { foodCuller };
+                tier.Apply();
 
                 EditorSceneManager.SaveScene(scene, ScenePath);
                 AddSceneToBuild(ScenePath);
@@ -159,31 +166,38 @@ namespace Dino.World.EditorTools
             go.transform.position = new Vector3(0f, spec.terrainBottom, 0f);
             go.isStatic = true;
             var t = go.GetComponent<Terrain>();
-            t.materialTemplate = TerrainMaterial();
+            bool heightBlend = layers.Count == 4 && layers.TrueForAll(l => l && l.maskMapTexture);
+            t.materialTemplate = TerrainMaterial(heightBlend);
             t.drawInstanced = true;
             t.heightmapPixelError = 6f;          // higher = fewer triangles
             t.basemapDistance = 180f;
             t.treeDistance = 320f;
             t.treeBillboardDistance = 320f;      // placeholder trees use LODs, not billboards
             t.treeMaximumFullLODCount = 60;
-            t.detailObjectDistance = 55f;
-            t.detailObjectDensity = 0.8f;
+            t.detailObjectDistance = 60f;   // WorldQualityTier adjusts these per graphics level
+            t.detailObjectDensity = 0.6f;
             t.shadowCastingMode = ShadowCastingMode.TwoSided;
             t.allowAutoConnect = false;
             go.GetComponent<TerrainCollider>().terrainData = td;
             return t;
         }
 
-        static Material TerrainMaterial()
+        /// <summary>Height blend: where two ground layers meet, the higher bumps (stones, tufts) win, so edges look natural.</summary>
+        static Material TerrainMaterial(bool heightBlend)
         {
             string path = GeneratedRoot + "/M_Terrain.mat";
             var m = AssetDatabase.LoadAssetAtPath<Material>(path);
-            if (m) return m;
-            var shader = Shader.Find("Universal Render Pipeline/Terrain/Lit");
-            if (!shader) return null;
-            m = new Material(shader);
-            if (m.HasProperty("_EnableHeightBlend")) m.SetFloat("_EnableHeightBlend", 0f);
-            AssetDatabase.CreateAsset(m, path);
+            if (!m)
+            {
+                var shader = Shader.Find("Universal Render Pipeline/Terrain/Lit");
+                if (!shader) return null;
+                m = new Material(shader);
+                AssetDatabase.CreateAsset(m, path);
+            }
+            if (m.HasProperty("_EnableHeightBlend")) m.SetFloat("_EnableHeightBlend", heightBlend ? 1f : 0f);
+            if (m.HasProperty("_HeightTransition")) m.SetFloat("_HeightTransition", 0.08f);
+            if (heightBlend) m.EnableKeyword("_TERRAIN_BLEND_HEIGHT"); else m.DisableKeyword("_TERRAIN_BLEND_HEIGHT");
+            EditorUtility.SetDirty(m);
             return m;
         }
 
@@ -288,22 +302,18 @@ namespace Dino.World.EditorTools
 
         static void BuildGrass(IslandSpec spec, IslandData data, WorldArtSet art, PlaceholderArt.Result ph, TerrainData td)
         {
-            var proto = new DetailPrototype
-            {
-                prototype = art.grassDetail ? art.grassDetail : ph.grassDetail,
-                usePrototypeMesh = true,
-                useInstancing = true,
-                renderMode = DetailRenderMode.VertexLit,
-                minWidth = 0.7f, maxWidth = 1.3f,
-                minHeight = 0.6f, maxHeight = 1.4f,
-                noiseSpread = 0.3f,
-                healthyColor = Color.white,
-                dryColor = new Color(0.85f, 0.8f, 0.6f),
-            };
-            td.detailPrototypes = new[] { proto };
+            // Real blades (short lawn + tall tufts) when our grass shader is there; otherwise the old card tuft.
+            var real = art.grassDetail ? null : RealisticArt.BuildGrass(art);
+            var protos = new List<DetailPrototype>();
+            protos.Add(GrassProto(real != null ? real.shortTuft : (art.grassDetail ? art.grassDetail : ph.grassDetail)));
+            if (real != null) protos.Add(GrassProto(real.tallTuft));
+            td.detailPrototypes = protos.ToArray();
             td.SetDetailResolution(DetailResolution, 32);
+            td.SetDetailScatterMode(DetailScatterMode.InstanceCountMode);
+
             int n = DetailResolution;
-            var layer = new int[n, n];
+            var shortLayer = new int[n, n];
+            var tallLayer = new int[n, n];
             for (int z = 0; z < n; z++)
             for (int x = 0; x < n; x++)
             {
@@ -311,21 +321,42 @@ namespace Dino.World.EditorTools
                 int ix = Mathf.Clamp(Mathf.RoundToInt(u * (data.Resolution - 1)), 0, data.Resolution - 1);
                 int iz = Mathf.Clamp(Mathf.RoundToInt(v * (data.Resolution - 1)), 0, data.Resolution - 1);
                 int i = data.Index(ix, iz);
-                if (data.IsWater(i) || data.Heights[i] < 1.5f || data.Heights[i] > 75f || data.SlopeAt(ix, iz) > 30f) continue;
-                int density;
+                if (data.IsWater(i) || data.Heights[i] < 1.2f || data.Heights[i] > 80f || data.SlopeAt(ix, iz) > 32f) continue;
+                float lawn, tall;
                 switch (data.Biomes[i])
                 {
-                    case BiomeIds.MeadowCode: density = 6; break;
-                    case BiomeIds.LakeCode: density = 4; break;
-                    case BiomeIds.RiverbanksCode: density = 3; break;
-                    case BiomeIds.SwampCode: density = 3; break;
-                    case BiomeIds.ForestCode: density = 1; break;
-                    default: density = 0; break;
+                    case BiomeIds.MeadowCode: lawn = 11f; tall = 1.2f; break;
+                    case BiomeIds.LakeCode: lawn = 9f; tall = 1.2f; break;
+                    case BiomeIds.RiverbanksCode: lawn = 8f; tall = 2.2f; break;
+                    case BiomeIds.SwampCode: lawn = 5f; tall = 3f; break;
+                    case BiomeIds.ForestCode: lawn = 4.5f; tall = 0.6f; break;
+                    case BiomeIds.HighlandsCode: lawn = 1.2f; tall = 0.3f; break;
+                    default: lawn = 0f; tall = 0f; break;
                 }
                 float patch = IslandNoise.Fbm(u * 40f, v * 40f, spec.seed + 777, 3);
-                layer[z, x] = Mathf.RoundToInt(density * Mathf.Clamp01(patch * 1.8f - 0.3f));
+                float clump = IslandNoise.Fbm(u * 90f, v * 90f, spec.seed + 778, 2);
+                float thin = 1f - IslandNoise.SmoothStep(18f, 32f, data.SlopeAt(ix, iz));
+                shortLayer[z, x] = Mathf.Min(16, Mathf.RoundToInt(lawn * thin * Mathf.Clamp(patch * 1.5f + 0.1f, 0.3f, 1f)));
+                tallLayer[z, x] = Mathf.Min(8, Mathf.RoundToInt(tall * thin * Mathf.Clamp01(clump * 3.2f - 1.2f) * 2f));
             }
-            td.SetDetailLayer(0, 0, 0, layer);
+            td.SetDetailLayer(0, 0, 0, shortLayer);
+            if (real != null) td.SetDetailLayer(0, 0, 1, tallLayer);
+        }
+
+        static DetailPrototype GrassProto(GameObject prefab)
+        {
+            return new DetailPrototype
+            {
+                prototype = prefab,
+                usePrototypeMesh = true,
+                useInstancing = true,
+                renderMode = DetailRenderMode.VertexLit,
+                minWidth = 0.8f, maxWidth = 1.35f,
+                minHeight = 0.7f, maxHeight = 1.35f,
+                noiseSpread = 0.3f,
+                healthyColor = Color.white,
+                dryColor = new Color(0.85f, 0.8f, 0.6f),
+            };
         }
 
         // ================= biome map =================
@@ -377,8 +408,10 @@ namespace Dino.World.EditorTools
         {
             var waterRoot = new GameObject("Water").transform;
             waterRoot.SetParent(parent, false);
-            var waterMat = art.water ? art.water : ph.water;
-            var oceanMat = art.ocean ? art.ocean : ph.ocean;
+            var realWater = art.water ? null : RealisticArt.Water(false);
+            var realOcean = art.ocean ? null : RealisticArt.Water(true);
+            var waterMat = art.water ? art.water : realWater ? realWater : ph.water;
+            var oceanMat = art.ocean ? art.ocean : realOcean ? realOcean : ph.ocean;
 
             // Ocean: one big plane at sea level, plus a swim-only volume (no drinking seawater).
             var ocean = new GameObject("Ocean");
@@ -407,8 +440,11 @@ namespace Dino.World.EditorTools
             BuildRiverVolumes(spec, data, vols);
             BuildFlatVolumes(data, vols);
 
-            var anim = waterRoot.gameObject.AddComponent<WaterSurfaceAnimator>();
-            anim.materials = new[] { waterMat, oceanMat };
+            // Our water shader animates itself; the scroller is only for other (placeholder or custom) materials.
+            var scrolled = new List<Material>();
+            if (waterMat != realWater) scrolled.Add(waterMat);
+            if (oceanMat != realOcean) scrolled.Add(oceanMat);
+            if (scrolled.Count > 0) waterRoot.gameObject.AddComponent<WaterSurfaceAnimator>().materials = scrolled.ToArray();
         }
 
         static void BuildWaterMeshes(IslandData data, Material mat, Transform parent)
@@ -417,7 +453,8 @@ namespace Dino.World.EditorTools
             int res = data.Resolution;
             float cell = data.Cell;
             int tiles = Mathf.CeilToInt(data.Size / WaterMeshTile);
-            var builders = new Dictionary<int, (List<Vector3> v, List<Vector2> uv, List<int> t)>();
+            var builders = new Dictionary<int, (List<Vector3> v, List<Vector2> uv, List<int> t, List<Vector2> flow)>();
+            int[] cornerIndex = new int[4];
             var corner = new float[4];
 
             for (int z = 0; z + step < res; z += step)
@@ -434,7 +471,9 @@ namespace Dino.World.EditorTools
                 for (int k = 0; k < 4; k++) if (float.IsNaN(corner[k])) corner[k] = avg;
 
                 int tile = Mathf.Min(tiles - 1, (int)(x * cell / WaterMeshTile)) + tiles * Mathf.Min(tiles - 1, (int)(z * cell / WaterMeshTile));
-                if (!builders.TryGetValue(tile, out var b)) builders[tile] = b = (new List<Vector3>(), new List<Vector2>(), new List<int>());
+                if (!builders.TryGetValue(tile, out var b)) builders[tile] = b = (new List<Vector3>(), new List<Vector2>(), new List<int>(), new List<Vector2>());
+                cornerIndex[0] = i00; cornerIndex[1] = i10; cornerIndex[2] = i01; cornerIndex[3] = i11;
+                for (int k = 0; k < 4; k++) b.flow.Add(RiverFlow(data, cornerIndex[k]));
                 int s = b.v.Count;
                 float x0 = x * cell, x1 = (x + step) * cell, z0 = z * cell, z1 = (z + step) * cell;
                 b.v.Add(new Vector3(x0, corner[0] + 0.02f, z0)); b.uv.Add(new Vector2(x0, z0) * 0.1f);
@@ -452,6 +491,7 @@ namespace Dino.World.EditorTools
                 if (b.v.Count > 65000) mesh.indexFormat = IndexFormat.UInt32;
                 mesh.SetVertices(b.v);
                 mesh.SetUVs(0, b.uv);
+                mesh.SetUVs(1, b.flow);
                 mesh.SetTriangles(b.t, 0);
                 mesh.RecalculateNormals();
                 mesh.RecalculateTangents();
@@ -464,6 +504,34 @@ namespace Dino.World.EditorTools
                 mr.shadowCastingMode = ShadowCastingMode.Off;
                 go.isStatic = true;
             }
+        }
+
+        /// <summary>Downstream direction times speed (m/s) for river cells, zero for still water. Read by the water shader.</summary>
+        static Vector2 RiverFlow(IslandData d, int i)
+        {
+            if (d.Water[i] != WaterKind.River) return Vector2.zero;
+            float wx = (i % d.Resolution) * d.Cell, wz = (i / d.Resolution) * d.Cell;
+            float best = float.MaxValue; Vector2 flow = Vector2.zero;
+            foreach (var river in d.Rivers)
+            {
+                var P = river.points;
+                if (P == null || P.Length < 2) continue;
+                float sign = river.level[0] >= river.level[P.Length - 1] ? 1f : -1f; // points run downstream when the first is higher
+                for (int k = 0; k < P.Length; k++)
+                {
+                    float dx = P[k].x * d.Size - wx, dz = P[k].y * d.Size - wz;
+                    float dist = dx * dx + dz * dz;
+                    if (dist >= best) continue;
+                    best = dist;
+                    int a = Mathf.Max(0, k - 1), c = Mathf.Min(P.Length - 1, k + 1);
+                    Vector2 along = (P[c] - P[a]) * d.Size;
+                    float len = along.magnitude;
+                    if (len < 0.001f) continue;
+                    float drop = Mathf.Abs(river.level[a] - river.level[c]) / len;
+                    flow = along / len * sign * Mathf.Min(7f, 1.1f + drop * 14f);
+                }
+            }
+            return flow;
         }
 
         static bool Wet(IslandData d, int i) => d.Water[i] != WaterKind.None && d.Water[i] != WaterKind.Sea && d.Heights[i] < d.WaterLevel[i] + 0.2f;
@@ -575,7 +643,7 @@ namespace Dino.World.EditorTools
 
         // ================= props =================
 
-        static void BuildProps(IslandSpec spec, IslandData data, WorldArtSet art, PlaceholderArt.Result ph, Transform parent)
+        static DistanceCuller BuildProps(IslandSpec spec, IslandData data, WorldArtSet art, PlaceholderArt.Result ph, Transform parent)
         {
             var food = new GameObject("Food").transform;
             food.SetParent(parent, false);
@@ -620,6 +688,7 @@ namespace Dino.World.EditorTools
                     go.name = $"{p.kind}_{n:000}";
                 }
             }
+            return culler;
         }
 
         static void BuildLandmarks(IslandSpec spec, IslandData data, Transform parent)
@@ -723,30 +792,50 @@ namespace Dino.World.EditorTools
 
         static void BuildAtmosphere(WorldArtSet art, PlaceholderArt.Result ph, Transform parent)
         {
+            bool photoSky = art.skybox && art.hasSkyLighting;
+
             var sunGo = new GameObject("Sun");
             sunGo.transform.SetParent(parent, false);
-            sunGo.transform.rotation = Quaternion.Euler(48f, -35f, 0f);
+            // With a sky photo the light comes from where the sun is in the picture.
+            sunGo.transform.rotation = photoSky && art.sunDirection.sqrMagnitude > 0.01f
+                ? Quaternion.LookRotation(-art.sunDirection.normalized)
+                : Quaternion.Euler(48f, -35f, 0f);
             var sun = sunGo.AddComponent<Light>();
             sun.type = LightType.Directional;
-            sun.color = new Color(1f, 0.95f, 0.86f);
-            sun.intensity = 1.35f;
+            sun.color = new Color(1f, 0.955f, 0.87f);
+            sun.intensity = photoSky ? 2.2f : 1.5f;
             sun.shadows = LightShadows.Soft;
-            sun.shadowStrength = 0.85f;
+            sun.shadowStrength = photoSky ? 1f : 0.85f;
+            sun.shadowBias = 0.6f;
+            sun.shadowNormalBias = 0.6f;
 
             RenderSettings.sun = sun;
             RenderSettings.skybox = art.skybox ? art.skybox : ph.skybox;
             RenderSettings.ambientMode = AmbientMode.Trilight;
-            RenderSettings.ambientSkyColor = new Color(0.62f, 0.72f, 0.86f);
-            RenderSettings.ambientEquatorColor = new Color(0.52f, 0.56f, 0.52f);
-            RenderSettings.ambientGroundColor = new Color(0.30f, 0.27f, 0.22f);
+            RenderSettings.ambientSkyColor = photoSky ? art.ambientSky : new Color(0.62f, 0.72f, 0.86f);
+            RenderSettings.ambientEquatorColor = photoSky ? art.ambientEquator : new Color(0.52f, 0.56f, 0.52f);
+            RenderSettings.ambientGroundColor = photoSky ? art.ambientGround : new Color(0.30f, 0.27f, 0.22f);
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.ExponentialSquared;
-            RenderSettings.fogDensity = 0.0024f;
-            RenderSettings.fogColor = new Color(0.70f, 0.77f, 0.84f);
-            RenderSettings.reflectionIntensity = 0.8f;
+            RenderSettings.fogDensity = 0.0019f;
+            RenderSettings.fogColor = photoSky ? art.fogColor : new Color(0.70f, 0.77f, 0.84f);
 
-            // Post-processing: filmic tonemapping and a touch of bloom. Cheap on phones; needs
-            // "Post Processing" ticked on the game camera to show.
+            // Reflections: a cubemap of this sky, saved with the scene.
+            var reflection = RealisticArt.BakeSkyReflection();
+            if (reflection)
+            {
+                RenderSettings.defaultReflectionMode = DefaultReflectionMode.Custom;
+                RenderSettings.customReflectionTexture = reflection;
+                RenderSettings.reflectionIntensity = 1f;
+            }
+            else
+            {
+                RenderSettings.defaultReflectionMode = DefaultReflectionMode.Skybox;
+                RenderSettings.reflectionIntensity = 0.8f;
+            }
+
+            // Post-processing: filmic tonemapping, grading, soft bloom and a light vignette. Needs
+            // "Post Processing" ticked on the game camera to show (the game session does that).
             var volGo = new GameObject("PostProcessing");
             volGo.transform.SetParent(parent, false);
             var volume = volGo.AddComponent<Volume>();
@@ -765,14 +854,18 @@ namespace Dino.World.EditorTools
             var tone = profile.Add<Tonemapping>(true);
             tone.mode.Override(TonemappingMode.ACES);
             var bloom = profile.Add<Bloom>(true);
-            bloom.intensity.Override(0.35f);
-            bloom.threshold.Override(1.05f);
+            bloom.intensity.Override(0.3f);
+            bloom.threshold.Override(1.0f);
+            bloom.scatter.Override(0.72f);
             var color = profile.Add<ColorAdjustments>(true);
-            color.postExposure.Override(0.25f);
-            color.contrast.Override(8f);
-            color.saturation.Override(6f);
+            color.postExposure.Override(0.2f);
+            color.contrast.Override(12f);
+            color.saturation.Override(4f);
             var wb = profile.Add<WhiteBalance>(true);
-            wb.temperature.Override(6f);
+            wb.temperature.Override(5f);
+            var vignette = profile.Add<Vignette>(true);
+            vignette.intensity.Override(0.22f);
+            vignette.smoothness.Override(0.45f);
 
             foreach (var c in profile.components) { c.hideFlags = HideFlags.HideInInspector | HideFlags.HideInHierarchy; AssetDatabase.AddObjectToAsset(c, profile); }
             EditorUtility.SetDirty(profile);
@@ -785,7 +878,7 @@ namespace Dino.World.EditorTools
             var go = new GameObject("PreviewCamera");
             go.tag = "MainCamera";
             var cam = go.AddComponent<Camera>();
-            cam.farClipPlane = 900f;
+            cam.farClipPlane = 1600f;
             cam.nearClipPlane = 0.3f;
             var extra = go.AddComponent<UniversalAdditionalCameraData>();
             extra.renderPostProcessing = true;
